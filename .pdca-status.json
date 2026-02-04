@@ -1,0 +1,32 @@
+{
+  "md-to-slide-core": {
+    "phase": "archived",
+    "matchRate": 87,
+    "iterationCount": 0,
+    "startedAt": "2026-02-04T11:31:00Z",
+    "completedAt": "2026-02-04T14:08:00Z",
+    "archivedAt": "2026-02-04T14:13:00Z",
+    "archivedTo": "docs/archive/2026-02/md-to-slide-core/",
+    "documents": {
+      "plan": "md-to-slide-core.plan.md",
+      "design": "md-to-slide-core.design.md",
+      "analysis": "md-to-slide-core.analysis.md",
+      "report": "md-to-slide-core.report.md"
+    },
+    "metadata": {
+      "level": "Starter",
+      "productionReady": true,
+      "coreFeatures": 100,
+      "buildStatus": "clean"
+    }
+  },
+  "ux-optimization": {
+    "phase": "archived",
+    "matchRate": 100,
+    "iterationCount": 1,
+    "startedAt": "2026-02-04T14:15:00Z",
+    "completedAt": "2026-02-05T16:15:00Z",
+    "archivedAt": "2026-02-05T16:30:00Z",
+    "archivedTo": "docs/archive/2026-02/ux-optimization/"
+  }
+}

@@ -72,16 +72,32 @@ export interface EditorState {
  * Zustand Store 상태
  */
 export interface SlideStore {
-  // State
+  // ========== Existing State (v1.0.0) ==========
   markdown: string
   slides: Slide[]
   selectedTheme: string
   editorState: EditorState
 
-  // Actions
+  // ========== NEW: UX State (v1.1.0) ==========
+  isLoading: boolean
+  loadingMessage: string | null
+  error: string | null
+  progress: number  // 0-100
+  hasSeenOnboarding: boolean
+  keyboardShortcutsEnabled: boolean
+
+  // ========== Existing Actions (v1.0.0) ==========
   setMarkdown: (markdown: string) => void
   setSlides: (slides: Slide[]) => void
   setSelectedTheme: (theme: string) => void
   setEditorState: (state: Partial<EditorState>) => void
   reset: () => void
+
+  // ========== NEW: UX Actions (v1.1.0) ==========
+  setLoading: (isLoading: boolean, message?: string) => void
+  setError: (error: string | null) => void
+  clearError: () => void
+  setProgress: (progress: number) => void
+  setHasSeenOnboarding: (seen: boolean) => void
+  setKeyboardShortcutsEnabled: (enabled: boolean) => void
 }

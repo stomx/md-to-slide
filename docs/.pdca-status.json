@@ -1,10 +1,11 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-04T13:46:35.263Z",
+  "lastUpdated": "2026-02-04T15:00:13.502Z",
   "activeFeatures": [
     "md-to-slide-core",
     "md-to-slide",
-    "store"
+    "store",
+    "ui"
   ],
   "primaryFeature": "md-to-slide-core",
   "features": {
@@ -28,9 +29,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-04T12:13:09.036Z",
-        "lastUpdated": "2026-02-04T13:46:35.262Z"
+        "lastUpdated": "2026-02-04T14:49:14.174Z"
       },
-      "lastFile": "/Users/jaymon/Work/portfolio/md-to-slide/src/components/SlidePreview.tsx"
+      "lastFile": "/Users/jaymon/Work/portfolio/md-to-slide/src/components/MarkdownEditor.tsx"
     },
     "store": {
       "phase": "do",
@@ -41,9 +42,22 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-04T12:14:09.341Z",
-        "lastUpdated": "2026-02-04T12:14:09.341Z"
+        "lastUpdated": "2026-02-04T14:46:01.989Z"
       },
       "lastFile": "/Users/jaymon/Work/portfolio/md-to-slide/src/store/slide-store.ts"
+    },
+    "ui": {
+      "phase": "do",
+      "phaseNumber": 3,
+      "matchRate": null,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {},
+      "timestamps": {
+        "started": "2026-02-04T15:00:11.088Z",
+        "lastUpdated": "2026-02-04T15:00:13.502Z"
+      },
+      "lastFile": "/Users/jaymon/Work/portfolio/md-to-slide/src/components/ui/tooltip.tsx"
     }
   },
   "pipeline": {
@@ -88,7 +102,7 @@
   "session": {
     "startedAt": "2026-02-04T11:24:34.661Z",
     "onboardingCompleted": true,
-    "lastActivity": "2026-02-04T13:46:35.263Z"
+    "lastActivity": "2026-02-04T15:00:13.502Z"
   },
   "history": [
     {
@@ -390,6 +404,132 @@
     {
       "timestamp": "2026-02-04T13:46:35.263Z",
       "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:45:27.024Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:45:49.143Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:46:01.989Z",
+      "feature": "store",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:46:22.534Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:46:23.475Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:46:47.459Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:46:48.425Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:47:11.359Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:47:12.381Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:47:13.476Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:47:26.823Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:48:02.273Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:48:03.781Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:48:20.623Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:48:32.949Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:49:10.678Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:49:12.240Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T14:49:14.174Z",
+      "feature": "md-to-slide",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T15:00:11.088Z",
+      "feature": "ui",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T15:00:12.288Z",
+      "feature": "ui",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-04T15:00:13.502Z",
+      "feature": "ui",
       "phase": "do",
       "action": "updated"
     }

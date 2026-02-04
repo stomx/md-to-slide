@@ -13,13 +13,23 @@ import { DEFAULT_THEME } from '@/constants/themes'
  * - editorState: 에디터 커서 위치 등
  */
 export const useSlideStore = create<SlideStore>((set) => ({
-  // Initial State
+  // ========== Initial State (v1.0.0) ==========
   markdown: DEFAULT_MARKDOWN,
   slides: [],
   selectedTheme: DEFAULT_THEME,
   editorState: DEFAULT_EDITOR_STATE,
 
-  // Actions
+  // ========== NEW: UX State (v1.1.0) ==========
+  isLoading: false,
+  loadingMessage: null,
+  error: null,
+  progress: 0,
+  hasSeenOnboarding: typeof window !== 'undefined'
+    ? localStorage.getItem('hasSeenOnboarding') === 'true'
+    : false,
+  keyboardShortcutsEnabled: true,
+
+  // ========== Actions (v1.0.0) ==========
   setMarkdown: (markdown: string) =>
     set(() => ({
       markdown,
@@ -49,5 +59,42 @@ export const useSlideStore = create<SlideStore>((set) => ({
       slides: [],
       selectedTheme: DEFAULT_THEME,
       editorState: DEFAULT_EDITOR_STATE,
+      // UX state는 리셋하지 않음
+    })),
+
+  // ========== NEW: UX Actions (v1.1.0) ==========
+  setLoading: (isLoading: boolean, message?: string) =>
+    set(() => ({
+      isLoading,
+      loadingMessage: message || null,
+    })),
+
+  setError: (error: string | null) =>
+    set(() => ({
+      error,
+    })),
+
+  clearError: () =>
+    set(() => ({
+      error: null,
+    })),
+
+  setProgress: (progress: number) =>
+    set(() => ({
+      progress: Math.min(100, Math.max(0, progress)),
+    })),
+
+  setHasSeenOnboarding: (seen: boolean) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hasSeenOnboarding', String(seen))
+    }
+    set(() => ({
+      hasSeenOnboarding: seen,
+    }))
+  },
+
+  setKeyboardShortcutsEnabled: (enabled: boolean) =>
+    set(() => ({
+      keyboardShortcutsEnabled: enabled,
     })),
 }))
