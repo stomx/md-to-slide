@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slide Preview</title>
+
+  <!-- reveal.js CSS -->
+  <link rel="stylesheet" href="/reveal.js/dist/reveal.css">
+  <!-- 기본 테마 (동적으로 교체) -->
+  <link id="reveal-theme" rel="stylesheet" href="/reveal.js/dist/theme/black.css">
+  <!-- 플러그인 CSS -->
+  <link rel="stylesheet" href="/reveal.js/plugin/highlight/monokai.css">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+    body.ready {
+      opacity: 1;
+    }
+    .reveal {
+      width: 100% !important;
+      height: 100% !important;
+      position: relative !important;
+    }
+    /* reveal.js 레이아웃 완전 무시 - 단순하게 */
+    .reveal .slides {
+      position: relative !important;
+      left: 0 !important;
+      top: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      transform: none !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+    .reveal .slides > section {
+      width: 90% !important;
+      height: 90% !important;
+      max-width: 960px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+      <!-- 초기 기본 슬라이드 (reveal.js 초기화를 위해 필요) -->
+      <section>
+        <h1>Loading...</h1>
+        <p>Waiting for slides...</p>
+      </section>
+    </div>
+  </div>
+
+  <!-- reveal.js 스크립트 -->
+  <script src="/reveal.js/dist/reveal.js"></script>
+  <script src="/reveal.js/plugin/markdown/markdown.js"></script>
+  <script src="/reveal.js/plugin/highlight/highlight.js"></script>
+  <script src="/reveal.js/plugin/notes/notes.js"></script>
+
+  <script>
+    let revealInitialized = false;
+    let pendingUpdate = null;
+
+    // reveal.js 초기화
+    async function initReveal() {
+      if (revealInitialized) return;
+
+      try {
+        await Reveal.initialize({
+          hash: true,
+          controls: true,
+          progress: true,
+          center: true,
+          transition: 'slide',
+          slideNumber: true,
+          width: 960,
+          height: 700,
+        });
+        revealInitialized = true;
+        console.log('✅ reveal.js initialized in iframe');
+
+        // 초기화 완료 후 바로 표시
+        setTimeout(() => {
+          document.body.classList.add('ready');
+          console.log('Body ready class added (after init)');
+        }, 100);
+
+        // CSS 로드 상태 디버깅
+        console.log('🔍 CSS Debug:');
+        console.log('- reveal.css loaded:', !!document.querySelector('link[href*="reveal.css"]'));
+        console.log('- theme CSS loaded:', !!document.querySelector('#reveal-theme'));
+        console.log('- theme href:', document.querySelector('#reveal-theme')?.href);
+        console.log('- body bg:', window.getComputedStyle(document.body).backgroundColor);
+        console.log('- reveal bg:', window.getComputedStyle(document.querySelector('.reveal')).backgroundColor);
+
+        // 대기 중인 업데이트가 있으면 실행
+        if (pendingUpdate) {
+          console.log('Processing pending update');
+          updateSlides(pendingUpdate.slides, pendingUpdate.theme);
+          pendingUpdate = null;
+        }
+      } catch (error) {
+        console.error('❌ Failed to initialize reveal.js:', error);
+      }
+    }
+
+    // 슬라이드 HTML 생성
+    function slidesToHTML(slides) {
+      if (!slides || slides.length === 0) {
+        return '<section><h1>No slides yet</h1><p>Start typing in the editor!</p></section>';
+      }
+
+      const sections = {};
+
+      slides.forEach(slide => {
+        const sectionId = slide.sectionId || 'default';
+        if (!sections[sectionId]) {
+          sections[sectionId] = [];
+        }
+        sections[sectionId].push(slide);
+      });
+
+      return Object.values(sections)
+        .map(sectionSlides => {
+          if (sectionSlides.length === 1) {
+            return `<section>${sectionSlides[0].html}</section>`;
+          } else {
+            return `<section>\n${sectionSlides.map(s => `  <section>${s.html}</section>`).join('\n')}\n</section>`;
+          }
+        })
+        .join('\n');
+    }
+
+    // 테마 적용
+    function applyTheme(themeName) {
+      const existingLink = document.getElementById('reveal-theme');
+      if (existingLink) {
+        existingLink.href = `/reveal.js/dist/theme/${themeName}.css`;
+        console.log('Theme changed to:', themeName);
+      }
+    }
+
+    // 슬라이드 업데이트
+    function updateSlides(slides, theme) {
+      const slidesContainer = document.querySelector('.reveal .slides');
+      if (!slidesContainer) {
+        console.error('Slides container not found');
+        return;
+      }
+
+      // 현재 위치 저장
+      const state = revealInitialized ? Reveal.getState() : null;
+
+      // HTML 생성
+      const html = slidesToHTML(slides);
+      console.log('Generated HTML length:', html.length);
+
+      // HTML 업데이트
+      slidesContainer.innerHTML = html;
+      console.log('Slides container updated');
+
+      // 테마 적용
+      if (theme) {
+        applyTheme(theme);
+      }
+
+      // reveal.js 동기화
+      if (revealInitialized) {
+        Reveal.sync();
+        console.log('Reveal synced');
+
+        // 슬라이드 레이아웃 강제 업데이트
+        Reveal.layout();
+        console.log('Reveal layout updated');
+
+        // 위치 복원 (에러 방지)
+        if (state && Reveal.slide) {
+          setTimeout(() => {
+            try {
+              Reveal.slide(state.indexh, state.indexv || 0);
+              console.log('Slide position restored:', state.indexh, state.indexv);
+            } catch (e) {
+              console.debug('Slide position restore skipped:', e.message);
+            }
+          }, 100);
+        }
+      }
+
+      console.log('Slides updated:', slides.length);
+
+      // 슬라이드 업데이트 후 색상 및 위치 확인
+      setTimeout(() => {
+        const presentSlide = document.querySelector('.reveal .slides section.present');
+        const firstH1 = document.querySelector('.reveal .slides section.present h1');
+
+        console.log('🔍 Slide Debug:');
+        console.log('- Present slide exists:', !!presentSlide);
+        console.log('- First h1 exists:', !!firstH1);
+
+        if (firstH1) {
+          const style = window.getComputedStyle(firstH1);
+          console.log('- h1 color:', style.color);
+          console.log('- h1 display:', style.display);
+          console.log('- h1 visibility:', style.visibility);
+          console.log('- h1 opacity:', style.opacity);
+        }
+
+        const revealEl = document.querySelector('.reveal');
+        if (revealEl) {
+          const revealStyle = window.getComputedStyle(revealEl);
+          console.log('- reveal transform:', revealStyle.transform);
+          console.log('- reveal position:', revealStyle.position);
+          console.log('- reveal width:', revealEl.offsetWidth);
+          console.log('- reveal height:', revealEl.offsetHeight);
+          console.log('- reveal top:', revealEl.offsetTop);
+          console.log('- reveal left:', revealEl.offsetLeft);
+        }
+
+        const slidesEl = document.querySelector('.reveal .slides');
+        if (slidesEl) {
+          const slidesStyle = window.getComputedStyle(slidesEl);
+          console.log('- slides width:', slidesEl.offsetWidth);
+          console.log('- slides height:', slidesEl.offsetHeight);
+          console.log('- slides left:', slidesStyle.left);
+          console.log('- slides top:', slidesStyle.top);
+          console.log('- slides position:', slidesStyle.position);
+          console.log('- slides style.transform:', slidesEl.style.transform);
+          console.log('- slides computed transform:', slidesStyle.transform);
+        }
+      }, 200);
+    }
+
+    // postMessage 리스너
+    window.addEventListener('message', (event) => {
+      if (event.data.type === 'UPDATE_SLIDES') {
+        if (revealInitialized) {
+          updateSlides(event.data.slides, event.data.theme);
+        } else {
+          console.log('Reveal not initialized yet, storing pending update');
+          pendingUpdate = { slides: event.data.slides, theme: event.data.theme };
+        }
+      }
+    });
+
+    // 초기화
+    initReveal();
+  </script>
+</body>
+</html>
