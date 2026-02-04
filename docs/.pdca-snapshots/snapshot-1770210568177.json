@@ -1,0 +1,341 @@
+{
+  "timestamp": "2026-02-04T13:09:28.176Z",
+  "reason": "compaction",
+  "status": {
+    "version": "2.0",
+    "lastUpdated": "2026-02-04T13:02:20.462Z",
+    "activeFeatures": [
+      "md-to-slide-core",
+      "md-to-slide",
+      "store"
+    ],
+    "primaryFeature": "md-to-slide-core",
+    "features": {
+      "md-to-slide-core": {
+        "phase": "check",
+        "startedAt": "2026-02-04T11:30:00.000Z",
+        "planDocument": "docs/01-plan/features/md-to-slide-core.plan.md",
+        "designDocument": "docs/02-design/features/md-to-slide-core.design.md",
+        "analysisDocument": "docs/03-analysis/md-to-slide-core.analysis.md",
+        "matchRate": 94,
+        "iterationCount": 0,
+        "status": "analyzed",
+        "checkCompletedAt": "2026-02-04T12:08:00.000Z"
+      },
+      "md-to-slide": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-04T12:13:09.036Z",
+          "lastUpdated": "2026-02-04T13:02:20.462Z"
+        },
+        "lastFile": "/Users/jaymon/Work/portfolio/md-to-slide/src/app/page.tsx"
+      },
+      "store": {
+        "phase": "do",
+        "phaseNumber": 3,
+        "matchRate": null,
+        "iterationCount": 0,
+        "requirements": [],
+        "documents": {},
+        "timestamps": {
+          "started": "2026-02-04T12:14:09.341Z",
+          "lastUpdated": "2026-02-04T12:14:09.341Z"
+        },
+        "lastFile": "/Users/jaymon/Work/portfolio/md-to-slide/src/store/slide-store.ts"
+      }
+    },
+    "pipeline": {
+      "currentPhase": 4,
+      "level": "Starter",
+      "phaseHistory": [
+        {
+          "phase": 1,
+          "completedAt": "2026-02-04T11:35:00.000Z",
+          "status": "completed",
+          "documents": [
+            "docs/01-plan/schema.md",
+            "docs/01-plan/glossary.md"
+          ]
+        },
+        {
+          "phase": 2,
+          "completedAt": "2026-02-04T11:40:00.000Z",
+          "status": "completed",
+          "documents": [
+            "docs/01-plan/conventions.md"
+          ]
+        },
+        {
+          "phase": 3,
+          "completedAt": "2026-02-04T12:01:00.000Z",
+          "status": "completed",
+          "documents": [
+            "All source code files generated"
+          ]
+        },
+        {
+          "phase": 4,
+          "completedAt": "2026-02-04T12:08:00.000Z",
+          "status": "completed",
+          "documents": [
+            "docs/03-analysis/md-to-slide-core.analysis.md"
+          ]
+        }
+      ]
+    },
+    "session": {
+      "startedAt": "2026-02-04T11:24:34.661Z",
+      "onboardingCompleted": true,
+      "lastActivity": "2026-02-04T13:02:20.462Z"
+    },
+    "history": [
+      {
+        "timestamp": "2026-02-04T11:30:00.000Z",
+        "action": "plan_created",
+        "feature": "md-to-slide-core",
+        "document": "docs/01-plan/features/md-to-slide-core.plan.md"
+      },
+      {
+        "timestamp": "2026-02-04T11:35:00.000Z",
+        "action": "schema_created",
+        "phase": 1,
+        "documents": [
+          "docs/01-plan/schema.md",
+          "docs/01-plan/glossary.md"
+        ]
+      },
+      {
+        "timestamp": "2026-02-04T11:40:00.000Z",
+        "action": "convention_created",
+        "phase": 2,
+        "documents": [
+          "docs/01-plan/conventions.md"
+        ]
+      },
+      {
+        "timestamp": "2026-02-04T11:45:00.000Z",
+        "action": "design_created",
+        "feature": "md-to-slide-core",
+        "document": "docs/02-design/features/md-to-slide-core.design.md"
+      },
+      {
+        "timestamp": "2026-02-04T12:01:00.000Z",
+        "action": "implementation_completed",
+        "feature": "md-to-slide-core",
+        "phase": "do",
+        "filesGenerated": 23
+      },
+      {
+        "timestamp": "2026-02-04T12:08:00.000Z",
+        "action": "analysis_completed",
+        "feature": "md-to-slide-core",
+        "phase": "check",
+        "matchRate": 94,
+        "document": "docs/03-analysis/md-to-slide-core.analysis.md"
+      },
+      {
+        "timestamp": "2026-02-04T12:13:09.036Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:14:09.341Z",
+        "feature": "store",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:23:09.890Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:23:40.059Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:24:24.068Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:24:57.912Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:28:41.652Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:28:54.956Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:29:04.292Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:29:11.731Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:29:26.926Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:29:39.972Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:33:03.519Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:33:17.950Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:33:28.700Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:36:09.163Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:38:00.488Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:41:05.772Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:41:23.080Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:44:35.451Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:44:53.626Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:50:22.014Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:52:48.076Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:52:55.546Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:53:04.845Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:53:10.882Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:53:20.082Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:55:12.561Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T12:55:20.486Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T13:01:02.875Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T13:01:42.193Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T13:02:09.611Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      },
+      {
+        "timestamp": "2026-02-04T13:02:20.462Z",
+        "feature": "md-to-slide",
+        "phase": "do",
+        "action": "updated"
+      }
+    ]
+  }
+}
