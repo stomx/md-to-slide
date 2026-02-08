@@ -92,27 +92,24 @@
 ```
 사용자 입력 (Markdown)
          │
-         ↓
-    Debounce (300ms)
+         ├──→ Zustand Store 즉시 업데이트 (setMarkdown)
          │
-         ↓
-  Zustand Store 업데이트
-         │
-         ├──→ markdownParser.splitSlides()
-         │         │
-         │         ↓
-         │    Slide[] 배열 생성
-         │         │
-         │         ↓
-         │    reveal.js 렌더링
-         │
-         └──→ 테마 변경 시
+         └──→ Debounce (300ms) 후 파싱
                    │
                    ↓
-              CSS 동적 로드
+              parseMarkdownToSlides()
                    │
                    ↓
-              reveal.js 재초기화
+              Slide[] 배열 생성 → Store 저장
+                   │
+                   ↓
+              slidesToRevealHTML() → innerHTML 주입
+                   │
+                   ↓
+              reveal.js sync()
+
+테마 변경 시:
+         CSS link href 업데이트 (동적 로드)
 ```
 
 ### 2.3 Component Dependencies
@@ -120,8 +117,16 @@
 ```
 App (page.tsx)
  │
+ ├─→ ResponsiveLayout (v1.1.0)
+ │    ├─→ useMediaQuery (hooks)
+ │    └─→ Tabs (ui)
+ │
  ├─→ MarkdownEditor
- │    └─→ useSlideStore (Zustand)
+ │    ├─→ useSlideStore (Zustand)
+ │    ├─→ markdownParser (lib)
+ │    ├─→ errorHandler (lib)
+ │    ├─→ LoadingSpinner (v1.1.0)
+ │    └─→ showToast (Toast, v1.1.0)
  │
  ├─→ SlidePreview
  │    ├─→ useSlideStore (Zustand)
@@ -130,11 +135,15 @@ App (page.tsx)
  │
  ├─→ ThemeSelector
  │    ├─→ useSlideStore (Zustand)
- │    └─→ themeManager (lib)
+ │    └─→ BUILTIN_THEMES (constants)
  │
  └─→ ExportButtons
       ├─→ useSlideStore (Zustand)
-      └─→ exportHelper (lib)
+      ├─→ exportHelper (lib)
+      └─→ showToast (Toast, v1.1.0)
+
+Layout (layout.tsx)
+ └─→ ToastProvider (v1.1.0)
 ```
 
 ---
@@ -147,25 +156,52 @@ App (page.tsx)
 // store/slide-store.ts
 
 interface SlideStore {
-  // State
+  // ========== State (v1.0.0) ==========
   markdown: string                    // 사용자 입력 마크다운
   selectedTheme: string               // 현재 테마 이름
   isDirty: boolean                    // 저장 안 된 변경사항 여부
   slides: Slide[]                     // 파싱된 슬라이드 배열
+  editorState: EditorState            // 에디터 커서 위치 등
 
-  // Actions
+  // ========== UX State (v1.1.0) ==========
+  isLoading: boolean                  // 로딩 상태
+  loadingMessage: string | null       // 로딩 메시지
+  error: string | null                // 에러 메시지
+  progress: number                    // 진행률 (0-100)
+  hasSeenOnboarding: boolean          // 온보딩 완료 여부
+  keyboardShortcutsEnabled: boolean   // 키보드 단축키 활성화
+
+  // ========== Actions (v1.0.0) ==========
   setMarkdown: (markdown: string) => void
-  setTheme: (theme: string) => void
+  setSelectedTheme: (theme: string) => void
   setSlides: (slides: Slide[]) => void
+  setEditorState: (state: Partial<EditorState>) => void
+  setIsDirty: (dirty: boolean) => void
   reset: () => void
+
+  // ========== UX Actions (v1.1.0) ==========
+  setLoading: (isLoading: boolean, message?: string) => void
+  setError: (error: string | null) => void
+  clearError: () => void
+  setProgress: (progress: number) => void
+  setHasSeenOnboarding: (seen: boolean) => void
+  setKeyboardShortcutsEnabled: (enabled: boolean) => void
 }
 
 // 초기 상태
 const initialState = {
-  markdown: DEFAULT_SAMPLE_MARKDOWN,
-  selectedTheme: 'black',
+  markdown: DEFAULT_MARKDOWN,
+  selectedTheme: DEFAULT_THEME,
   isDirty: false,
-  slides: []
+  slides: [],
+  editorState: DEFAULT_EDITOR_STATE,
+  // v1.1.0 UX
+  isLoading: false,
+  loadingMessage: null,
+  error: null,
+  progress: 0,
+  hasSeenOnboarding: false,  // localStorage 연동
+  keyboardShortcutsEnabled: true,
 }
 ```
 
@@ -195,13 +231,32 @@ export interface Theme {
   preview?: string                    // 썸네일 이미지 URL
 }
 
+export interface Deck {
+  id: string
+  title: string
+  slides: Slide[]
+  theme: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Section {
+  id: string
+  slides: Slide[]
+  order: number
+}
+
 export interface ExportConfig {
   format: 'pdf' | 'html'
-  filename: string
-  includeNotes?: boolean              // PDF 전용
-  separateFragments?: boolean         // PDF 전용
-  embedAssets?: boolean               // HTML 전용
-  revealJsMode?: 'cdn' | 'local'      // HTML 전용
+  includeNotes: boolean               // 발표자 노트 포함 여부
+  theme: string                       // 현재 테마 이름
+  customCss?: string                  // 사용자 정의 CSS
+}
+
+export interface EditorState {
+  markdown: string
+  cursorPosition: number
+  selectedSlideId?: string
 }
 ```
 
@@ -209,27 +264,30 @@ export interface ExportConfig {
 
 ```typescript
 // constants/separators.ts
-export const HORIZONTAL_SEPARATOR = /^\r?\n---\r?\n$/
-export const VERTICAL_SEPARATOR = /^\r?\n-----\r?\n$/
+export const HORIZONTAL_SEPARATOR = /^\r?\n---\r?\n$/m
+export const VERTICAL_SEPARATOR = /^\r?\n-----\r?\n$/m
 export const NOTES_SEPARATOR = /^notes?:/i
+export const SEPARATOR_STRINGS = {
+  horizontal: '\n---\n',
+  vertical: '\n-----\n',
+} as const
 
 // constants/themes.ts
-export const DEFAULT_THEMES: Theme[] = [
+export const BUILTIN_THEMES: Theme[] = [
   { name: 'black', displayName: 'Black', builtIn: true, cssUrl: '/reveal.js/dist/theme/black.css' },
   { name: 'white', displayName: 'White', builtIn: true, cssUrl: '/reveal.js/dist/theme/white.css' },
   { name: 'league', displayName: 'League', builtIn: true, cssUrl: '/reveal.js/dist/theme/league.css' },
   // ... 12개 테마
 ]
+export const DEFAULT_THEME = 'black'
+export function getThemeByName(name: string): Theme | undefined { ... }
 
 // constants/defaults.ts
-export const DEFAULT_THEME = 'black'
 export const DEBOUNCE_DELAY = 300
-export const DEFAULT_SAMPLE_MARKDOWN = `# Welcome to md-to-slide
-
----
-
-## Slide 2
-...`
+export const DEFAULT_MARKDOWN = `# Welcome to md-to-slide\n---\n## Features\n...`
+export const DEFAULT_EDITOR_STATE = { markdown: DEFAULT_MARKDOWN, cursorPosition: 0 }
+export const REVEAL_CONFIG = { hash: true, controls: true, progress: true, ... }  // 향후 확장용
+export const DEFAULT_EXPORT_CONFIG = { format: 'pdf', includeNotes: false, theme: DEFAULT_THEME }  // 향후 확장용
 ```
 
 ---
@@ -244,128 +302,182 @@ export const DEFAULT_SAMPLE_MARKDOWN = `# Welcome to md-to-slide
 | `SlidePreview` | `components/SlidePreview.tsx` | reveal.js 미리보기 | - |
 | `ThemeSelector` | `components/ThemeSelector.tsx` | 테마 선택 드롭다운 | - |
 | `ExportButtons` | `components/ExportButtons.tsx` | PDF/HTML 내보내기 버튼 | - |
-| `Button` | `components/ui/Button.tsx` | 재사용 버튼 | `onClick`, `variant` |
-| `Select` | `components/ui/Select.tsx` | 재사용 드롭다운 | `value`, `onChange`, `options` |
-| `Textarea` | `components/ui/Textarea.tsx` | 재사용 텍스트 영역 | `value`, `onChange` |
+| `ResponsiveLayout` | `components/ResponsiveLayout.tsx` | 반응형 레이아웃 (v1.1.0) | `children` |
+| `Toast` / `ToastProvider` | `components/Toast.tsx` | 토스트 알림 (v1.1.0) | - |
+| `HelpModal` | `components/HelpModal.tsx` | 도움말 모달 (v1.1.0) | `open`, `onClose` |
+| `LoadingSpinner` | `components/LoadingSpinner.tsx` | 로딩 인디케이터 (v1.1.0) | `size`, `message`, `overlay` |
+| `ProgressBar` | `components/ProgressBar.tsx` | 진행률 바 (v1.1.0, 준비됨*) | `progress`, `message`, `showPercentage` |
+| `KeyboardShortcutModal` | `components/KeyboardShortcutModal.tsx` | 키보드 단축키 모달 (v1.1.0, 준비됨*) | `open`, `onClose` |
+| `OnboardingTutorial` | `components/OnboardingTutorial.tsx` | 온보딩 튜토리얼 (v1.1.0, 준비됨*) | - |
+
+> **\* 준비됨(Ready)**: 컴포넌트가 구현되어 있으나, 아직 `page.tsx`에 연결되지 않은 상태입니다. 향후 UX 강화 시 바로 통합 가능합니다.
+| `Button` | `components/ui/Button.tsx` | shadcn/ui 버튼 (Radix) | `onClick`, `variant` |
+| `Select` | `components/ui/Select.tsx` | shadcn/ui 드롭다운 (Radix) | `value`, `onValueChange` |
+| `Textarea` | `components/ui/Textarea.tsx` | shadcn/ui 텍스트 영역 (Radix) | `value`, `onChange` |
+| `Dialog` | `components/ui/dialog.tsx` | shadcn/ui 다이얼로그 (Radix) | `open`, `onOpenChange` |
+| `Tabs` | `components/ui/tabs.tsx` | shadcn/ui 탭 (Radix) | `value`, `onValueChange` |
+| `Tooltip` | `components/ui/tooltip.tsx` | shadcn/ui 툴팁 (Radix) | `content` |
 
 ### 4.2 MarkdownEditor Component
 
 ```typescript
+'use client'
+
 // components/MarkdownEditor.tsx
 
+import React, { useEffect, useCallback } from 'react'
 import { useSlideStore } from '@/store/slide-store'
-import { Textarea } from '@/components/ui/Textarea'
 import { debounce } from '@/lib/utils'
+import { parseMarkdownToSlides } from '@/lib/markdownParser'
+import { handleError } from '@/lib/errorHandler'
+import { DEBOUNCE_DELAY } from '@/constants/defaults'
+import { Textarea } from './ui/Textarea'
+import { LoadingSpinner } from './LoadingSpinner'
+import { showToast } from './Toast'
 
 export function MarkdownEditor() {
-  const { markdown, setMarkdown } = useSlideStore()
+  const { markdown, setMarkdown, setSlides, isLoading, error, setLoading, setError, clearError } = useSlideStore()
 
-  // Debounce 적용 (300ms)
-  const debouncedSetMarkdown = debounce(setMarkdown, 300)
+  // Debounced 파싱 함수 with error handling
+  const debouncedParse = useCallback(
+    debounce(async (text: string) => {
+      setLoading(true, 'Parsing markdown...')
+      clearError()
+      try {
+        const parsedSlides = parseMarkdownToSlides(text)
+        setSlides(parsedSlides)
+        showToast.success(`${parsedSlides.length} slides parsed`)
+      } catch (err) {
+        const result = handleError(err, 'Markdown parsing')
+        setError(result.message)
+        showToast.error(result.message)
+      } finally {
+        setLoading(false)
+      }
+    }, DEBOUNCE_DELAY),
+    [setSlides, setLoading, setError, clearError]
+  )
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    debouncedSetMarkdown(e.target.value)
+    setMarkdown(e.target.value)      // 즉시 store 업데이트
+    debouncedParse(e.target.value)   // 파싱만 debounce
   }
 
+  // 초기 파싱: 마운트 시 기본 마크다운을 파싱
+  useEffect(() => {
+    try {
+      const parsedSlides = parseMarkdownToSlides(markdown)
+      setSlides(parsedSlides)
+    } catch (err) {
+      const result = handleError(err, 'Initial markdown parsing')
+      setError(result.message)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
-    <div className="editor-container">
-      <Textarea
-        value={markdown}
-        onChange={handleChange}
-        placeholder="# Slide 1\n\n---\n\n# Slide 2"
-        className="markdown-editor"
-      />
-    </div>
+    // Textarea + LoadingSpinner overlay + Error Alert (role="alert")
   )
 }
 ```
 
 **Props**: 없음 (Zustand store 사용)
 
-**State**: 없음 (전역 상태 사용)
+**State**: 없음 (전역 상태 사용, v1.1.0 `isLoading`, `error` 포함)
 
 **Responsibilities**:
 - 마크다운 입력 받기
-- Debounce 적용하여 store 업데이트
-- 스크롤 동기화 (선택 사항)
+- Debounce 적용하여 파싱 + store 업데이트
+- 초기 마운트 시 기본 마크다운 파싱
+- 에러 처리 (`handleError` + `showToast.error`)
+- 로딩 상태 표시 (`LoadingSpinner` overlay)
 
 ---
 
 ### 4.3 SlidePreview Component
 
 ```typescript
+'use client'
+
 // components/SlidePreview.tsx
 
-import { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { useSlideStore } from '@/store/slide-store'
-import { parseMarkdownToSlides } from '@/lib/markdownParser'
-import Reveal from 'reveal.js'
+import { slidesToRevealHTML } from '@/lib/markdownParser'
+import { REVEAL_CONFIG } from '@/constants/defaults'
 
 export function SlidePreview() {
-  const { markdown, selectedTheme } = useSlideStore()
-  const revealRef = useRef<HTMLDivElement>(null)
-  const revealInstance = useRef<Reveal | null>(null)
+  const { slides, selectedTheme } = useSlideStore()
+  const containerRef = useRef<HTMLDivElement>(null)
+  const revealRef = useRef<any>(null)
+  const [isReady, setIsReady] = useState(false)
+  const initializingRef = useRef(false)
 
-  // reveal.js 초기화
+  // reveal.js 초기화 (한 번만, dynamic import)
   useEffect(() => {
-    if (!revealRef.current) return
+    if (initializingRef.current) return
+    if (typeof window === 'undefined') return
 
-    revealInstance.current = new Reveal(revealRef.current, {
-      controls: true,
-      progress: true,
-      center: true,
-      hash: true,
-      transition: 'slide'
-    })
+    initializingRef.current = true
 
-    revealInstance.current.initialize()
+    const initReveal = async () => {
+      const Reveal = (await import('reveal.js')).default
 
+      if (!containerRef.current) return
+
+      const revealInstance = new Reveal(containerRef.current, {
+        ...REVEAL_CONFIG,
+        embedded: true,
+        hash: false,
+        width: 960,
+        height: 700,
+      })
+
+      revealInstance.on('ready', () => setIsReady(true))
+      await revealInstance.initialize()
+      revealRef.current = revealInstance
+    }
+
+    initReveal()
     return () => {
-      revealInstance.current?.destroy()
+      if (revealRef.current) {
+        revealRef.current.destroy()
+        revealRef.current = null
+        initializingRef.current = false
+      }
     }
   }, [])
 
-  // 마크다운 변경 시 슬라이드 재렌더링
+  // 슬라이드 업데이트 (innerHTML 주입 + sync)
   useEffect(() => {
-    const slides = parseMarkdownToSlides(markdown)
+    if (!isReady || !revealRef.current) return
 
-    if (revealInstance.current) {
-      revealInstance.current.sync()  // 슬라이드 동기화
+    const slidesHTML = slidesToRevealHTML(slides)
+    const slidesContainer = containerRef.current?.querySelector('.slides')
+
+    if (slidesContainer) {
+      slidesContainer.innerHTML = slidesHTML
+      revealRef.current.sync()
+      revealRef.current.slide(0, 0)
     }
-  }, [markdown])
+  }, [slides, isReady])
 
-  // 테마 변경 시 CSS 로드
+  // 테마 변경 시 CSS link href 업데이트
   useEffect(() => {
-    const theme = THEMES.find(t => t.name === selectedTheme)
-    if (!theme) return
-
-    // 기존 테마 CSS 제거
-    const oldLink = document.querySelector('#reveal-theme')
-    if (oldLink) oldLink.remove()
-
-    // 새 테마 CSS 추가
-    const link = document.createElement('link')
-    link.id = 'reveal-theme'
-    link.rel = 'stylesheet'
-    link.href = theme.cssUrl
-    document.head.appendChild(link)
-  }, [selectedTheme])
-
-  const slides = parseMarkdownToSlides(markdown)
+    if (!isReady) return
+    const themeLink = document.getElementById('reveal-theme-link') as HTMLLinkElement
+    if (themeLink) {
+      themeLink.href = `/reveal.js/dist/theme/${selectedTheme}.css`
+    }
+  }, [selectedTheme, isReady])
 
   return (
-    <div className="reveal" ref={revealRef}>
-      <div className="slides">
-        {slides.map(slide => (
-          <section
-            key={slide.id}
-            data-markdown=""
-            data-separator="---"
-            data-separator-vertical="-----"
-          >
-            <div dangerouslySetInnerHTML={{ __html: slide.html }} />
-          </section>
-        ))}
+    <div className="relative w-full h-full bg-gray-900">
+      <div ref={containerRef} className="reveal-container">
+        <div className="reveal">
+          <div className="slides">
+            <section><h1>Loading...</h1></section>
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -374,41 +486,59 @@ export function SlidePreview() {
 
 **Props**: 없음
 
-**Refs**: `revealRef` (reveal.js DOM), `revealInstance` (reveal.js API)
+**Refs**: `containerRef` (reveal.js DOM), `revealRef` (reveal.js API)
+
+**State**: `isReady` (reveal.js 초기화 완료 여부)
 
 **Responsibilities**:
-- reveal.js 초기화 및 라이프사이클 관리
-- 마크다운 변경 감지 및 슬라이드 재렌더링
-- 테마 변경 시 CSS 동적 로드
+- reveal.js 초기화 및 라이프사이클 관리 (dynamic import)
+- `slidesToRevealHTML()`로 HTML 생성 → `innerHTML` 주입 → `sync()`
+- 테마 변경 시 CSS link href 업데이트
 
 ---
 
 ### 4.4 ThemeSelector Component
 
 ```typescript
+'use client'
+
 // components/ThemeSelector.tsx
 
+import React from 'react'
+
 import { useSlideStore } from '@/store/slide-store'
-import { Select } from '@/components/ui/Select'
-import { THEMES } from '@/constants/themes'
+import { BUILTIN_THEMES } from '@/constants/themes'
+
+import {
+  Select, SelectContent, SelectItem,
+  SelectTrigger, SelectValue,
+} from './ui/Select'
 
 export function ThemeSelector() {
-  const { selectedTheme, setTheme } = useSlideStore()
+  const { selectedTheme, setSelectedTheme } = useSlideStore()
 
-  const options = THEMES.map(theme => ({
-    value: theme.name,
-    label: theme.displayName
-  }))
+  // 테마 변경 핸들러 (iframe이 자동으로 postMessage를 통해 테마 적용)
+  const handleThemeChange = (value: string) => {
+    setSelectedTheme(value)
+  }
 
   return (
-    <div className="theme-selector">
-      <label htmlFor="theme-select">Theme:</label>
-      <Select
-        id="theme-select"
-        value={selectedTheme}
-        onChange={setTheme}
-        options={options}
-      />
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor="theme-selector" className="text-sm font-medium text-gray-700">
+        Theme
+      </label>
+      <Select value={selectedTheme} onValueChange={handleThemeChange}>
+        <SelectTrigger id="theme-selector" className="w-48 bg-white">
+          <SelectValue placeholder="Select theme" />
+        </SelectTrigger>
+        <SelectContent className="bg-white">
+          {BUILTIN_THEMES.map((theme) => (
+            <SelectItem key={theme.name} value={theme.name} className="text-gray-900">
+              {theme.displayName}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 }
@@ -425,45 +555,59 @@ export function ThemeSelector() {
 ### 4.5 ExportButtons Component
 
 ```typescript
+'use client'
+
 // components/ExportButtons.tsx
+
+import React from 'react'
+import { FileDown, FileText } from 'lucide-react'
 
 import { useSlideStore } from '@/store/slide-store'
 import { exportToPDF, exportToHTML } from '@/lib/exportHelper'
-import { Button } from '@/components/ui/Button'
+
+import type { ExportConfig } from '@/types/slide.types'
+
+import { Button } from './ui/Button'
+import { showToast } from './Toast'
 
 export function ExportButtons() {
-  const { markdown, selectedTheme } = useSlideStore()
+  const { selectedTheme } = useSlideStore()
 
-  const handleExportPDF = async () => {
+  const handleExportPDF = () => {
     try {
-      await exportToPDF({ format: 'pdf', filename: 'presentation.pdf' })
-    } catch (error) {
-      console.error('PDF export failed:', error)
-      alert('PDF 내보내기에 실패했습니다.')
+      const config: ExportConfig = {
+        format: 'pdf',
+        includeNotes: false,
+        theme: selectedTheme,
+      }
+      exportToPDF(config)
+    } catch {
+      showToast.error('PDF 내보내기에 실패했습니다.')
     }
   }
 
-  const handleExportHTML = async () => {
+  const handleExportHTML = () => {
     try {
-      await exportToHTML({
+      const config: ExportConfig = {
         format: 'html',
-        filename: 'presentation.html',
-        embedAssets: true,
-        revealJsMode: 'local'
-      })
-    } catch (error) {
-      console.error('HTML export failed:', error)
-      alert('HTML 내보내기에 실패했습니다.')
+        includeNotes: false,
+        theme: selectedTheme,
+      }
+      exportToHTML(config, 'presentation.html')
+    } catch {
+      showToast.error('HTML 내보내기에 실패했습니다.')
     }
   }
 
   return (
-    <div className="export-buttons">
-      <Button onClick={handleExportPDF} variant="outline">
-        Export to PDF
+    <div className="flex gap-2">
+      <Button onClick={handleExportPDF} variant="outline" size="sm">
+        <FileDown className="mr-2 h-4 w-4" />
+        Export PDF
       </Button>
-      <Button onClick={handleExportHTML} variant="default">
-        Export to HTML
+      <Button onClick={handleExportHTML} variant="default" size="sm">
+        <FileText className="mr-2 h-4 w-4" />
+        Export HTML
       </Button>
     </div>
   )
@@ -486,8 +630,10 @@ export function ExportButtons() {
 // lib/markdownParser.ts
 
 import { marked } from 'marked'
-import type { Slide } from '@/types/slide.types'
+import DOMPurify from 'dompurify'
+
 import { HORIZONTAL_SEPARATOR, VERTICAL_SEPARATOR } from '@/constants/separators'
+import type { Slide } from '@/types/slide.types'
 
 /**
  * 마크다운을 Slide[] 배열로 변환
@@ -506,21 +652,38 @@ export function parseMarkdownToSlides(markdown: string): Slide[] {
     const verticalSlides = section.split(VERTICAL_SEPARATOR)
 
     verticalSlides.forEach((content, vIndex) => {
-      const slide: Slide = {
+      const trimmedContent = content.trim()
+      if (!trimmedContent) return  // 빈 슬라이드 건너뛰기
+
+      // 3. 마크다운 → HTML 변환 + XSS 방지 (DOMPurify)
+      const rawHtml = marked(trimmedContent) as string
+      const html = typeof window !== 'undefined'
+        ? DOMPurify.sanitize(rawHtml)
+        : rawHtml
+
+      slides.push({
         id: `slide-${hIndex}-${vIndex}`,
-        content: content.trim(),
-        html: marked(content.trim()),  // marked.js로 HTML 변환
+        content: trimmedContent,
+        html,
         order: globalOrder++,
         type: vIndex === 0 ? 'horizontal' : 'vertical',
-        sectionId: `section-${hIndex}`
-      }
-
-      slides.push(slide)
+        sectionId: `section-${hIndex}`,
+      })
     })
   })
 
   return slides
 }
+```
+
+**시간 복잡도**: O(n) (n = 마크다운 길이)
+
+**성능 목표**: 1000줄 마크다운을 100ms 이내 파싱
+
+#### Utility Functions
+
+```typescript
+// lib/utils.ts
 
 /**
  * Debounce 유틸리티
@@ -531,55 +694,44 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {
-  let timeoutId: NodeJS.Timeout
+  let timeoutId: NodeJS.Timeout | null = null
 
   return (...args: Parameters<T>) => {
-    clearTimeout(timeoutId)
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
     timeoutId = setTimeout(() => func(...args), delay)
   }
 }
+
+/**
+ * 클래스명 병합 유틸리티
+ * @param classes - 병합할 클래스명들
+ */
+export function cn(...classes: (string | undefined | null | false)[]): string {
+  return classes.filter(Boolean).join(' ')
+}
 ```
-
-**시간 복잡도**: O(n) (n = 마크다운 길이)
-
-**성능 목표**: 1000줄 마크다운을 100ms 이내 파싱
 
 ---
 
-### 5.2 Theme Application Algorithm
+### 5.2 Theme Application
+
+테마 변경은 SlidePreview 컴포넌트에서 직접 CSS link href를 업데이트하는 방식을 사용합니다:
 
 ```typescript
-// lib/themeManager.ts
+// components/SlidePreview.tsx - 테마 변경 시 CSS link href 업데이트
 
-import type { Theme } from '@/types/slide.types'
-
-/**
- * 테마 CSS를 동적으로 로드
- * @param theme - 적용할 테마 객체
- */
-export function applyTheme(theme: Theme): void {
-  // 1. 기존 테마 CSS 제거
-  const oldLink = document.querySelector('#reveal-theme')
-  if (oldLink) {
-    oldLink.remove()
+useEffect(() => {
+  if (!isReady) return
+  const themeLink = document.getElementById('reveal-theme-link') as HTMLLinkElement
+  if (themeLink) {
+    themeLink.href = `/reveal.js/dist/theme/${selectedTheme}.css`
   }
-
-  // 2. 새 테마 CSS 추가
-  const link = document.createElement('link')
-  link.id = 'reveal-theme'
-  link.rel = 'stylesheet'
-  link.href = theme.cssUrl
-  document.head.appendChild(link)
-
-  // 3. CSS Variables 오버라이드 (선택 사항)
-  if (theme.cssVariables) {
-    const root = document.documentElement
-    Object.entries(theme.cssVariables).forEach(([key, value]) => {
-      root.style.setProperty(key, value)
-    })
-  }
-}
+}, [selectedTheme, isReady])
 ```
+
+> **참고**: `lib/themeManager.ts`에 `applyTheme()` 및 `getCurrentTheme()` 유틸리티가 존재하며, 향후 커스텀 테마 CSS Variables 오버라이드 등 고급 기능 확장 시 활용할 수 있습니다. 현재 기본 테마는 CSS link href 변경으로 충분합니다.
 
 ---
 
@@ -592,22 +744,29 @@ export function applyTheme(theme: Theme): void {
 
 /**
  * PDF로 내보내기 (브라우저 인쇄 API 사용)
+ * 동기 함수 - reveal.js ?print-pdf 파라미터 활용
  * @param config - PDF 내보내기 설정
  */
-export async function exportToPDF(config: ExportConfig): Promise<void> {
-  // 1. URL에 ?print-pdf 파라미터 추가
-  const printUrl = `${window.location.origin}${window.location.pathname}?print-pdf`
+export function exportToPDF(config: ExportConfig): void {
+  const params = new URLSearchParams()
+  params.set('print-pdf', '')
 
-  // 2. 새 창 열기
-  const printWindow = window.open(printUrl, '_blank')
-
-  if (!printWindow) {
-    throw new Error('Popup blocked. Please allow popups.')
+  if (config.includeNotes) {
+    params.set('showNotes', 'true')
   }
 
-  // 3. 인쇄 대화상자 열기 (자동)
-  printWindow.onload = () => {
-    printWindow.print()
+  const url = `${window.location.origin}?${params.toString()}`
+
+  // 새 창에서 인쇄 뷰 열기
+  const printWindow = window.open(url, '_blank')
+
+  if (printWindow) {
+    // 페이지 로드 후 인쇄 대화상자 자동 열기
+    printWindow.addEventListener('load', () => {
+      setTimeout(() => {
+        printWindow.print()
+      }, 1000)
+    })
   }
 }
 ```
@@ -616,57 +775,28 @@ export async function exportToPDF(config: ExportConfig): Promise<void> {
 
 ```typescript
 /**
- * HTML 파일로 내보내기 (reveal.js 포함)
+ * HTML 파일로 내보내기 (DOM outerHTML 사용)
+ * 동기 함수 - 현재 페이지 DOM을 그대로 HTML로 내보내기
  * @param config - HTML 내보내기 설정
+ * @param filename - 저장할 파일명 (기본값: 'slides.html')
  */
-export async function exportToHTML(config: ExportConfig): Promise<void> {
-  const { markdown, selectedTheme } = useSlideStore.getState()
-  const slides = parseMarkdownToSlides(markdown)
+export function exportToHTML(config: ExportConfig, filename = 'slides.html'): void {
+  // 1. 현재 페이지 전체 HTML 가져오기
+  const htmlContent = document.documentElement.outerHTML
 
-  // 1. HTML 템플릿 생성
-  const html = `
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8">
-  <title>Presentation</title>
-  <link rel="stylesheet" href="reveal.js/dist/reveal.css">
-  <link rel="stylesheet" href="reveal.js/dist/theme/${selectedTheme}.css">
-</head>
-<body>
-  <div class="reveal">
-    <div class="slides">
-      ${slides.map(slide => `
-        <section>
-          ${slide.html}
-        </section>
-      `).join('\n')}
-    </div>
-  </div>
+  // 2. Blob 생성
+  const blob = new Blob([htmlContent], { type: 'text/html' })
 
-  <script src="reveal.js/dist/reveal.js"></script>
-  <script>
-    Reveal.initialize({
-      controls: true,
-      progress: true,
-      center: true,
-      hash: true
-    })
-  </script>
-</body>
-</html>
-  `
+  // 3. 다운로드 링크 생성 및 트리거
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 
-  // 2. Blob 생성 및 다운로드
-  const blob = new Blob([html], { type: 'text/html' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = config.filename
-  a.click()
-
-  // 3. Cleanup
-  URL.revokeObjectURL(url)
+  // 4. URL 해제
+  URL.revokeObjectURL(link.href)
 }
 ```
 
@@ -716,11 +846,11 @@ export async function exportToHTML(config: ExportConfig): Promise<void> {
 7. PDF/HTML 다운로드
 ```
 
-### 6.3 Responsive Design (선택 사항)
+### 6.3 Responsive Design
 
 - **Desktop** (>= 1024px): 좌우 분할 (50:50)
-- **Tablet** (768px ~ 1023px): 좌우 분할 (40:60)
-- **Mobile** (< 768px): 세로 배치 (에디터 위, 미리보기 아래)
+- **Tablet** (640px ~ 1023px): 탭 기반 전환 (Editor / Preview 탭)
+- **Mobile** (< 640px): 세로 배치 (에디터 위, 미리보기 아래)
 
 ---
 
@@ -738,23 +868,67 @@ export async function exportToHTML(config: ExportConfig): Promise<void> {
 ### 7.2 Error Handling Code
 
 ```typescript
-// components/SlidePreview.tsx
+// components/MarkdownEditor.tsx - 에러 알림 + Toast 패턴
 
+import { handleError } from '@/lib/errorHandler'
+import { showToast } from './Toast'
+
+// Debounced 파싱에서 에러 처리
 try {
-  const slides = parseMarkdownToSlides(markdown)
-  setSlides(slides)
-} catch (error) {
-  console.error('Markdown parsing failed:', error)
-
-  // Fallback: 에러 슬라이드 표시
-  setSlides([{
-    id: 'error-slide',
-    content: '# Parsing Error\n\nPlease check your markdown syntax.',
-    html: '<h1>Parsing Error</h1><p>Please check your markdown syntax.</p>',
-    order: 0,
-    type: 'horizontal'
-  }])
+  const parsedSlides = parseMarkdownToSlides(text)
+  setSlides(parsedSlides)
+  showToast.success(`${parsedSlides.length} slides parsed`)
+} catch (err) {
+  const result = handleError(err, 'Markdown parsing')
+  setError(result.message)
+  showToast.error(result.message)
 }
+
+// UI: Error Alert Banner (role="alert", aria-live="assertive")
+{error && (
+  <div role="alert" aria-live="assertive"
+    className="absolute bottom-4 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg">
+    <strong>Error: </strong><span>{error}</span>
+    <button onClick={clearError} aria-label="Dismiss error">×</button>
+  </div>
+)}
+```
+
+```typescript
+// components/ExportButtons.tsx - Export 에러 처리
+
+const handleExportPDF = () => {
+  try {
+    exportToPDF(config)
+  } catch {
+    showToast.error('PDF 내보내기에 실패했습니다.')
+  }
+}
+```
+
+### 7.3 Error Handling Utilities
+
+```typescript
+// lib/errorHandler.ts - 커스텀 에러 클래스 및 유틸리티
+
+export class MarkdownParsingError extends Error { lineNumber?: number }
+export class ExportError extends Error { recoverable: boolean }
+export interface ErrorResult { message: string; recoverable: boolean; retry?: () => void }
+
+export function handleError(error: unknown, context: string, options?: { onRetry?: () => void }): ErrorResult
+export async function withErrorHandling<T>(fn: () => Promise<T>, context: string, options?: { onRetry?: () => void }): Promise<T>
+```
+
+### 7.4 Toast Notification API
+
+```typescript
+// components/Toast.tsx - showToast API
+
+showToast.success(message)   // 성공 알림
+showToast.error(message, options?: { action?: { label, onClick } })  // 에러 알림 (액션 버튼 지원)
+showToast.warning(message)   // 경고 알림
+showToast.info(message)      // 정보 알림
+showToast.promise(promise, { loading, success, error })  // Promise 추적
 ```
 
 ---
@@ -820,12 +994,27 @@ import { MarkdownEditor } from '@/components/MarkdownEditor'  // ❌
 |-----------|-------|----------|
 | `MarkdownEditor` | Presentation | `src/components/MarkdownEditor.tsx` |
 | `SlidePreview` | Presentation | `src/components/SlidePreview.tsx` |
+| `ThemeSelector` | Presentation | `src/components/ThemeSelector.tsx` |
+| `ExportButtons` | Presentation | `src/components/ExportButtons.tsx` |
+| `ResponsiveLayout` | Presentation | `src/components/ResponsiveLayout.tsx` (v1.1.0) |
+| `Toast` / `ToastProvider` | Presentation | `src/components/Toast.tsx` (v1.1.0) |
+| `HelpModal` | Presentation | `src/components/HelpModal.tsx` (v1.1.0) |
+| `LoadingSpinner` | Presentation | `src/components/LoadingSpinner.tsx` (v1.1.0) |
 | `parseMarkdownToSlides()` | Application | `src/lib/markdownParser.ts` |
-| `applyTheme()` | Application | `src/lib/themeManager.ts` |
+| `applyTheme()`, `getCurrentTheme()` | Application | `src/lib/themeManager.ts` (유틸리티, 향후 확장용) |
 | `exportToPDF()` | Application | `src/lib/exportHelper.ts` |
+| `handleError()`, `withErrorHandling()` | Application | `src/lib/errorHandler.ts` (v1.1.0) |
+| `MarkdownParsingError`, `ExportError` | Application | `src/lib/errorHandler.ts` (커스텀 에러 클래스) |
+| `withLoading()`, `setLoadingState()`, `setProgressState()` | Application | `src/lib/loadingManager.ts` (v1.1.0, DI 패턴) |
+| `debounce()`, `cn()` | Application | `src/lib/utils.ts` |
 | `useSlideStore` | Application | `src/store/slide-store.ts` |
-| `Slide` type | Domain | `src/types/slide.types.ts` |
-| `THEMES` | Domain | `src/constants/themes.ts` |
+| `useIsMobile`, `useIsTablet`, `useIsDesktop` | Application | `src/hooks/useMediaQuery.ts` (v1.1.0) |
+| `useKeyboardShortcut`, `formatShortcut()` | Application | `src/hooks/useKeyboardShortcut.ts` (v1.1.0) |
+| `Slide`, `Theme`, `ExportConfig` | Domain | `src/types/slide.types.ts` |
+| `ToastOptions`, `KeyboardShortcut` | Domain | `src/types/ux.types.ts` (v1.1.0) |
+| `BUILTIN_THEMES` | Domain | `src/constants/themes.ts` |
+| `HORIZONTAL_SEPARATOR` | Domain | `src/constants/separators.ts` |
+| `DEFAULT_MARKDOWN` | Domain | `src/constants/defaults.ts` |
 
 ---
 
@@ -840,6 +1029,7 @@ import { MarkdownEditor } from '@/components/MarkdownEditor'  // ❌
 | Constants | UPPER_SNAKE_CASE | `DEFAULT_THEME`, `DEBOUNCE_DELAY` |
 | Types | PascalCase | `Slide`, `Theme`, `ExportConfig` |
 | Files (component) | PascalCase.tsx | `MarkdownEditor.tsx` |
+| Files (ui/shadcn) | lowercase.tsx | `dialog.tsx`, `tabs.tsx`, `tooltip.tsx` (shadcn/ui 컨벤션) |
 | Files (utility) | camelCase.ts | `markdownParser.ts`, `exportHelper.ts` |
 | Folders | kebab-case | `markdown-editor/` |
 
@@ -853,24 +1043,29 @@ import { useState, useEffect } from 'react'
 import { marked } from 'marked'
 import { create } from 'zustand'
 
-// 3. Internal modules
-import { Button } from '@/components/ui/Button'
+// 3. Internal modules (absolute @/)
 import { parseMarkdownToSlides } from '@/lib/markdownParser'
 import { useSlideStore } from '@/store/slide-store'
 
-// 4. Types
+// 4. Types (import type)
 import type { Slide, Theme } from '@/types/slide.types'
 
-// 5. Styles
+// 5. Relative imports (./)
+import { Button } from './ui/Button'
+import { showToast } from './Toast'
+
+// 6. Styles
 import './styles.css'
 ```
 
-### 10.3 Environment Variables
+### 10.3 Environment Variables (Optional)
 
-| Variable | Purpose | Exposed | Value |
-|----------|---------|:-------:|-------|
-| `NEXT_PUBLIC_APP_URL` | 앱 URL | ✅ | `http://localhost:3000` |
-| `NEXT_PUBLIC_REVEAL_CDN` | reveal.js CDN (Fallback) | ✅ | `https://cdn.jsdelivr.net/npm/reveal.js@5.0.4` |
+> Starter 레벨에서는 환경 변수 없이 로컬 번들을 사용합니다. 향후 확장 시 사용 가능한 변수:
+
+| Variable | Purpose | Exposed | Value | Status |
+|----------|---------|:-------:|-------|:------:|
+| `NEXT_PUBLIC_APP_URL` | 앱 URL | ✅ | `http://localhost:3000` | Optional |
+| `NEXT_PUBLIC_REVEAL_CDN` | reveal.js CDN (Fallback) | ✅ | `https://cdn.jsdelivr.net/npm/reveal.js@5.0.4` | Optional |
 
 ---
 
@@ -882,33 +1077,58 @@ import './styles.css'
 src/
 ├── app/
 │   ├── page.tsx                    # 메인 페이지
-│   ├── layout.tsx                  # 레이아웃
-│   └── globals.css                 # Tailwind CSS
+│   ├── layout.tsx                  # 레이아웃 (ToastProvider, reveal.js CSS, monokai highlight CSS 포함)
+│   └── globals.css                 # Tailwind CSS + shadcn/ui CSS Variables + reveal.js 컨테이너 스타일
 ├── components/
-│   ├── MarkdownEditor.tsx
-│   ├── SlidePreview.tsx
-│   ├── ThemeSelector.tsx
-│   ├── ExportButtons.tsx
-│   └── ui/
+│   ├── MarkdownEditor.tsx          # 마크다운 입력 에디터
+│   ├── SlidePreview.tsx            # reveal.js 미리보기
+│   ├── ThemeSelector.tsx           # 테마 선택 드롭다운
+│   ├── ExportButtons.tsx           # PDF/HTML 내보내기 버튼
+│   ├── ResponsiveLayout.tsx        # 반응형 레이아웃 (v1.1.0)
+│   ├── Toast.tsx                   # 토스트 알림 (v1.1.0)
+│   ├── HelpModal.tsx               # 도움말 모달 (v1.1.0)
+│   ├── LoadingSpinner.tsx          # 로딩 인디케이터 (v1.1.0)
+│   ├── ProgressBar.tsx             # 진행률 바 (v1.1.0)
+│   ├── KeyboardShortcutModal.tsx   # 키보드 단축키 모달 (v1.1.0)
+│   ├── OnboardingTutorial.tsx      # 온보딩 튜토리얼 (v1.1.0)
+│   └── ui/                        # shadcn/ui (Radix UI)
 │       ├── Button.tsx
 │       ├── Select.tsx
-│       └── Textarea.tsx
+│       ├── Textarea.tsx
+│       ├── dialog.tsx
+│       ├── tabs.tsx
+│       └── tooltip.tsx
 ├── lib/
-│   ├── markdownParser.ts           # 마크다운 → Slide[] 변환
-│   ├── themeManager.ts             # 테마 적용 로직
+│   ├── markdownParser.ts           # 마크다운 → Slide[] 변환 (DOMPurify)
+│   ├── themeManager.ts             # 테마 적용 유틸리티 (향후 확장용)
 │   ├── exportHelper.ts             # PDF/HTML 내보내기
-│   └── utils.ts                    # debounce 등
+│   ├── errorHandler.ts             # 에러 처리 유틸리티 (v1.1.0)
+│   ├── loadingManager.ts           # 로딩 상태 관리 (v1.1.0, DI 패턴)
+│   ├── utils.ts                    # debounce, cn 등
+│   └── __tests__/                  # Vitest 테스트
+│       ├── markdownParser.test.ts   # 파서 단위 테스트 (11 tests)
+│       ├── utils.test.ts            # 유틸리티 단위 테스트 (6 tests)
+│       └── storeIntegration.test.ts # Store ↔ Parser 통합 테스트 (4 tests)
+├── hooks/
+│   ├── useMediaQuery.ts            # 반응형 미디어쿼리 (v1.1.0)
+│   ├── useKeyboardShortcut.ts      # 키보드 단축키 (v1.1.0)
+│   └── useFocusTrap.ts             # 포커스 트랩 (v1.1.0)
 ├── types/
-│   └── slide.types.ts              # Slide, Theme, ExportConfig 타입
+│   ├── slide.types.ts              # Slide, Theme, ExportConfig, SlideStore 타입
+│   ├── ux.types.ts                 # UX 관련 타입 (v1.1.0)
+│   └── reveal.d.ts                 # reveal.js 타입 선언
 ├── store/
-│   └── slide-store.ts              # Zustand 전역 상태
+│   └── slide-store.ts              # Zustand 전역 상태 (v1.0.0 + v1.1.0 UX)
 ├── constants/
 │   ├── themes.ts                   # 12개 테마 정의
 │   ├── separators.ts               # 마크다운 구분자 정규식
 │   └── defaults.ts                 # 기본값
 └── public/
     └── reveal.js/                  # reveal.js 라이브러리 (로컬)
+vitest.config.ts                      # Vitest 테스트 설정 (프로젝트 루트)
 ```
+
+> **Note**: hooks를 사용하는 클라이언트 컴포넌트(`MarkdownEditor`, `SlidePreview`, `ThemeSelector`, `ExportButtons`, `ResponsiveLayout`, `Toast`, `HelpModal`, `KeyboardShortcutModal`, `OnboardingTutorial`, `hooks/*`, `app/page.tsx`, `ui/Select.tsx`)에는 `'use client'` 디렉티브가 필수입니다. 순수 presentational 컴포넌트(`LoadingSpinner`, `ProgressBar`, `Button`, `Textarea`)와 Radix wrapper(`dialog`, `tabs`, `tooltip`)는 부모 client 컴포넌트에서 호출되므로 `'use client'`가 불필요합니다.
 
 ### 11.2 Implementation Order (구현 순서)
 
@@ -942,9 +1162,12 @@ src/
   - [ ] `exportToHTML()` 구현
 
 #### Phase 5: UI 컴포넌트
-- [ ] `components/ui/Button.tsx` (재사용)
-- [ ] `components/ui/Select.tsx` (재사용)
-- [ ] `components/ui/Textarea.tsx` (재사용)
+- [ ] `components/ui/Button.tsx` (shadcn/ui - Radix)
+- [ ] `components/ui/Select.tsx` (shadcn/ui - Radix)
+- [ ] `components/ui/Textarea.tsx` (shadcn/ui - Radix)
+- [ ] `components/ui/dialog.tsx` (shadcn/ui - Radix)
+- [ ] `components/ui/tabs.tsx` (shadcn/ui - Radix)
+- [ ] `components/ui/tooltip.tsx` (shadcn/ui - Radix)
 - [ ] `components/MarkdownEditor.tsx`
 - [ ] `components/SlidePreview.tsx`
   - [ ] reveal.js 초기화
@@ -975,20 +1198,46 @@ src/
 ```json
 {
   "dependencies": {
-    "next": "^15.0.0",
+    // Core
+    "next": "^15.1.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "zustand": "^5.0.0",
-    "marked": "^15.0.0",
-    "reveal.js": "^5.0.4"
+    "zustand": "^5.0.2",
+    "marked": "^15.0.4",
+    "reveal.js": "^5.2.1",
+    "dompurify": "^3.3.1",
+    "@types/dompurify": "^3.0.5",
+    // UI (shadcn/ui + Radix)
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-tabs": "^1.1.13",
+    "@radix-ui/react-tooltip": "^1.2.8",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^3.4.0",
+    "lucide-react": "^0.563.0",
+    // UX (v1.1.0)
+    "react-hot-toast": "^2.6.0",
+    "react-joyride": "^2.9.3"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "@types/react": "^19.0.0",
-    "typescript": "^5.0.0",
+    "@types/node": "^22.10.5",
+    "@types/react": "^19.0.6",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.7.2",
     "tailwindcss": "^4.0.0",
-    "eslint": "^9.0.0",
-    "prettier": "^3.0.0"
+    "@tailwindcss/postcss": "^4.1.18",
+    "postcss": "^8.4.49",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.18.0",
+    "eslint-config-next": "^15.1.3",
+    "prettier": "^3.4.2",
+    // Testing (v1.1.0)
+    "vitest": "^4.0.18",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "jsdom": "^28.0.0"
   }
 }
 ```
@@ -999,12 +1248,12 @@ src/
 
 ### 12.1 Test Scope
 
-| Type | Target | Tool | Priority |
-|------|--------|------|----------|
-| Unit Test | `parseMarkdownToSlides()` | Jest/Vitest | Medium |
-| Unit Test | `debounce()` | Jest/Vitest | Low |
-| Integration Test | MarkdownEditor ↔ Store | Testing Library | Medium |
-| E2E Test | 전체 사용자 플로우 | Playwright | Low (선택) |
+| Type | Target | Tool | Priority | Status |
+|------|--------|------|----------|--------|
+| Unit Test | `parseMarkdownToSlides()` | Vitest | Medium | ✅ 11 tests |
+| Unit Test | `debounce()`, `cn()` | Vitest | Low | ✅ 6 tests |
+| Integration Test | Store ↔ MarkdownParser | Vitest + Zustand | Medium | ✅ 4 tests |
+| E2E Test | 전체 사용자 플로우 | Playwright | Low (선택) | - |
 
 ### 12.2 Key Test Cases
 
@@ -1041,10 +1290,10 @@ describe('parseMarkdownToSlides', () => {
 
 | Strategy | Implementation | Impact |
 |----------|----------------|--------|
-| **Debounce** | 300ms delay on markdown input | 렌더링 횟수 80% 감소 |
-| **React.memo** | Memoize SlidePreview | 불필요한 리렌더링 방지 |
-| **Lazy Load** | reveal.js 동적 import | 초기 번들 사이즈 감소 |
+| **Debounce** | 300ms delay on parse (store는 즉시) | 파싱 횟수 80% 감소 |
+| **Lazy Load** | reveal.js `dynamic import()` | 초기 번들 사이즈 감소 |
 | **Code Splitting** | Next.js 자동 분할 | 페이지별 최적화 |
+| **Zustand Selector** | Store selector 패턴으로 선택적 리렌더링 | React.memo 불필요 |
 
 ### 13.2 Performance Targets
 

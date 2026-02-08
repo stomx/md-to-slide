@@ -1,10 +1,13 @@
 'use client'
 
+import { Presentation } from 'lucide-react'
+
 import { MarkdownEditor } from '@/components/MarkdownEditor'
 import { SlidePreview } from '@/components/SlidePreview'
 import { ThemeSelector } from '@/components/ThemeSelector'
 import { ExportButtons } from '@/components/ExportButtons'
-import { Presentation } from 'lucide-react'
+import { ResponsiveLayout } from '@/components/ResponsiveLayout'
+import { useSlideStore } from '@/store/slide-store'
 
 /**
  * Home Page
@@ -13,8 +16,11 @@ import { Presentation } from 'lucide-react'
  * - 좌측: Markdown Editor
  * - 우측: Slide Preview
  * - 상단: Theme Selector + Export Buttons
+ * - 하단: Footer (슬라이드 수, 테마, 상태)
  */
 export default function Home() {
+  const { slides, selectedTheme, isDirty } = useSlideStore()
+
   return (
     <div className="flex h-screen flex-col bg-gray-50">
       {/* Header */}
@@ -34,18 +40,22 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="flex flex-1 overflow-hidden">
-        {/* Left: Markdown Editor */}
-        <div className="w-1/2 border-r border-gray-200 bg-white">
+      {/* Main Content - ResponsiveLayout handles Desktop/Tablet/Mobile */}
+      <main className="flex-1 overflow-hidden">
+        <ResponsiveLayout>
           <MarkdownEditor />
-        </div>
-
-        {/* Right: Slide Preview */}
-        <div className="w-1/2">
           <SlidePreview />
-        </div>
+        </ResponsiveLayout>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 bg-white px-6 py-2">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>Slides: {slides.length}</span>
+          <span>Theme: {selectedTheme}</span>
+          <span>{isDirty ? 'Unsaved changes' : 'Saved'}</span>
+        </div>
+      </footer>
     </div>
   )
 }

@@ -3,7 +3,7 @@
 'use client'
 
 import React from 'react'
-import { useIsMobile, useIsTablet, useIsDesktop } from '@/hooks/useMediaQuery'
+import { useIsMobile, useIsTablet } from '@/hooks/useMediaQuery'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 interface ResponsiveLayoutProps {
@@ -13,7 +13,6 @@ interface ResponsiveLayoutProps {
 export const ResponsiveLayout = ({ children }: ResponsiveLayoutProps) => {
   const isMobile = useIsMobile()
   const isTablet = useIsTablet()
-  const isDesktop = useIsDesktop()
 
   const childrenArray = React.Children.toArray(children)
   const [editor, preview] = childrenArray
@@ -52,11 +51,11 @@ export const ResponsiveLayout = ({ children }: ResponsiveLayoutProps) => {
     )
   }
 
-  // Desktop: 2-column layout (existing)
+  // Desktop (>= 1024px): 좌우 분할 (50:50)
   return (
-    <div className="grid grid-cols-2 gap-4 p-4 h-screen">
-      <div className="overflow-auto">{editor}</div>
-      <div className="overflow-auto">{preview}</div>
+    <div className="flex h-full">
+      <div className="w-1/2 border-r border-gray-200 bg-white">{editor}</div>
+      <div className="w-1/2">{preview}</div>
     </div>
   )
 }

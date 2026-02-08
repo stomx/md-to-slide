@@ -15,7 +15,8 @@
  * const debouncedSearch = debounce(searchFunc, 300)
  * debouncedSearch('query') // 300ms 후 실행
  */
-export function debounce<T extends (...args: unknown[]) => unknown>(
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function debounce<T extends (...args: any[]) => any>(
   func: T,
   delay: number
 ): (...args: Parameters<T>) => void {

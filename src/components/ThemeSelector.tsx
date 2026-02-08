@@ -1,15 +1,17 @@
 'use client'
 
 import React from 'react'
+
 import { useSlideStore } from '@/store/slide-store'
+import { BUILTIN_THEMES } from '@/constants/themes'
+
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from './ui/select'
-import { BUILTIN_THEMES } from '@/constants/themes'
+} from './ui/Select'
 
 /**
  * ThemeSelector 컴포넌트

@@ -1,5 +1,5 @@
-import type { Theme } from '@/types/slide.types'
 import { getThemeByName } from '@/constants/themes'
+import type { Theme } from '@/types/slide.types'
 
 /**
  * 테마 적용
@@ -18,18 +18,26 @@ export function applyTheme(themeName: string): Theme | null {
   if (!theme) return null
 
   // 기존 테마 링크 제거
-  const existingLink = document.getElementById('reveal-theme')
+  const existingLink = document.getElementById('reveal-theme-link')
   if (existingLink) {
     existingLink.remove()
   }
 
   // 새 테마 링크 추가
   const link = document.createElement('link')
-  link.id = 'reveal-theme'
+  link.id = 'reveal-theme-link'
   link.rel = 'stylesheet'
   link.href = theme.cssUrl
 
   document.head.appendChild(link)
+
+  // CSS Variables 오버라이드
+  if (theme.cssVariables) {
+    const root = document.documentElement
+    Object.entries(theme.cssVariables).forEach(([key, value]) => {
+      root.style.setProperty(key, value)
+    })
+  }
 
   return theme
 }
@@ -40,6 +48,6 @@ export function applyTheme(themeName: string): Theme | null {
  * @returns 현재 테마의 CSS URL 또는 null
  */
 export function getCurrentTheme(): string | null {
-  const link = document.getElementById('reveal-theme') as HTMLLinkElement
+  const link = document.getElementById('reveal-theme-link') as HTMLLinkElement
   return link?.href || null
 }

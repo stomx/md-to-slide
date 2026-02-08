@@ -1,7 +1,8 @@
 import { create } from 'zustand'
-import type { SlideStore, Slide, EditorState } from '@/types/slide.types'
+
 import { DEFAULT_MARKDOWN, DEFAULT_EDITOR_STATE } from '@/constants/defaults'
 import { DEFAULT_THEME } from '@/constants/themes'
+import type { SlideStore, Slide, EditorState } from '@/types/slide.types'
 
 /**
  * Zustand 슬라이드 스토어
@@ -18,6 +19,7 @@ export const useSlideStore = create<SlideStore>((set) => ({
   slides: [],
   selectedTheme: DEFAULT_THEME,
   editorState: DEFAULT_EDITOR_STATE,
+  isDirty: false,
 
   // ========== NEW: UX State (v1.1.0) ==========
   isLoading: false,
@@ -33,6 +35,7 @@ export const useSlideStore = create<SlideStore>((set) => ({
   setMarkdown: (markdown: string) =>
     set(() => ({
       markdown,
+      isDirty: true,
     })),
 
   setSlides: (slides: Slide[]) =>
@@ -53,13 +56,18 @@ export const useSlideStore = create<SlideStore>((set) => ({
       },
     })),
 
+  setIsDirty: (dirty: boolean) =>
+    set(() => ({
+      isDirty: dirty,
+    })),
+
   reset: () =>
     set(() => ({
       markdown: DEFAULT_MARKDOWN,
       slides: [],
       selectedTheme: DEFAULT_THEME,
       editorState: DEFAULT_EDITOR_STATE,
-      // UX state는 리셋하지 않음
+      isDirty: false,
     })),
 
   // ========== NEW: UX Actions (v1.1.0) ==========

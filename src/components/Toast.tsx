@@ -62,9 +62,9 @@ export const showToast = {
                 toast.dismiss(t.id)
               }}
               className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
-              aria-label={options.action.label}
+              aria-label={options.action?.label}
             >
-              {options.action.label}
+              {options.action?.label}
             </button>
           </div>
         ),

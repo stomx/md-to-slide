@@ -24,7 +24,6 @@ export const useKeyboardShortcut = (
 
     const handleKeyDown = (e: KeyboardEvent) => {
       shortcuts.forEach((shortcut) => {
-        const isCtrl = !shortcut.ctrl || e.ctrlKey || e.metaKey
         const isShift = !shortcut.shift || e.shiftKey
         const isAlt = !shortcut.alt || e.altKey
         const isMeta = !shortcut.meta || e.metaKey

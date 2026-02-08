@@ -126,7 +126,7 @@ This slide appears below the previous one`}
             <h3 className="text-lg font-semibold mb-2">Export</h3>
             <div className="space-y-2 text-sm">
               <p className="text-gray-600">
-                <strong>PDF</strong>: Use browser print (Cmd+P) with "Save as PDF"
+                <strong>PDF</strong>: Use browser print (Cmd+P) with &ldquo;Save as PDF&rdquo;
               </p>
               <p className="text-gray-600">
                 <strong>HTML</strong>: Standalone file with reveal.js bundled

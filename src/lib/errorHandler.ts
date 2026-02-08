@@ -1,7 +1,5 @@
 // lib/errorHandler.ts - Error Handling Utilities
 
-import { showToast } from '@/components/Toast'
-
 export class MarkdownParsingError extends Error {
   lineNumber?: number
 
@@ -22,17 +20,21 @@ export class ExportError extends Error {
   }
 }
 
+export interface ErrorResult {
+  message: string
+  recoverable: boolean
+  retry?: () => void
+}
+
 export const handleError = (
   error: unknown,
   context: string,
   options?: {
-    showToast?: boolean
     onRetry?: () => void
   }
-) => {
-  const { showToast: shouldShowToast = true, onRetry } = options || {}
-
+): ErrorResult => {
   let errorMessage = `${context} failed`
+  let recoverable = false
 
   if (error instanceof MarkdownParsingError) {
     errorMessage = error.lineNumber
@@ -40,6 +42,7 @@ export const handleError = (
       : `${context} failed: ${error.message}`
   } else if (error instanceof ExportError) {
     errorMessage = `${context} failed: ${error.message}`
+    recoverable = error.recoverable
   } else if (error instanceof Error) {
     errorMessage = `${context} failed: ${error.message}`
   } else {
@@ -48,20 +51,11 @@ export const handleError = (
 
   console.error(`[${context}]`, error)
 
-  if (shouldShowToast) {
-    if (onRetry && error instanceof ExportError && error.recoverable) {
-      showToast.error(errorMessage, {
-        action: {
-          label: 'Retry',
-          onClick: onRetry,
-        },
-      })
-    } else {
-      showToast.error(errorMessage)
-    }
+  return {
+    message: errorMessage,
+    recoverable,
+    retry: recoverable ? options?.onRetry : undefined,
   }
-
-  return errorMessage
 }
 
 export const withErrorHandling = async <T,>(

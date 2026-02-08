@@ -1,13 +1,15 @@
 'use client'
 
 import React, { useEffect, useCallback } from 'react'
+
 import { useSlideStore } from '@/store/slide-store'
-import { Textarea } from './ui/textarea'
 import { debounce } from '@/lib/utils'
 import { parseMarkdownToSlides } from '@/lib/markdownParser'
+import { handleError } from '@/lib/errorHandler'
 import { DEBOUNCE_DELAY } from '@/constants/defaults'
+
+import { Textarea } from './ui/Textarea'
 import { LoadingSpinner } from './LoadingSpinner'
-import { handleError, MarkdownParsingError } from '@/lib/errorHandler'
 import { showToast } from './Toast'
 
 /**
@@ -41,8 +43,9 @@ export function MarkdownEditor() {
         setSlides(parsedSlides)
         showToast.success(`${parsedSlides.length} slides parsed`)
       } catch (err) {
-        const errorMessage = handleError(err, 'Markdown parsing')
-        setError(errorMessage)
+        const result = handleError(err, 'Markdown parsing')
+        setError(result.message)
+        showToast.error(result.message)
       } finally {
         setLoading(false)
       }
@@ -59,14 +62,12 @@ export function MarkdownEditor() {
 
   // 초기 파싱
   useEffect(() => {
-    console.log('Initial markdown:', markdown.substring(0, 50) + '...')
-
     try {
       const parsedSlides = parseMarkdownToSlides(markdown)
-      console.log('Parsed slides:', parsedSlides.length, 'slides')
       setSlides(parsedSlides)
     } catch (err) {
-      handleError(err, 'Initial markdown parsing')
+      const result = handleError(err, 'Initial markdown parsing')
+      setError(result.message)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

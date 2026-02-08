@@ -41,17 +41,36 @@ UX 최적화 기능 - 로딩 상태, 에러 처리, 접근성, 반응형 디자�
 
 ---
 
-### md-to-slide-core (v1.0.0)
+### md-to-slide-core (v1.1.0)
 
-**Archived**: 2026-02-04
-**Match Rate**: 87%
+**Archived**: 2026-02-05
+**Match Rate**: 94%
 **Iterations**: 0
+**Duration**: 2026-02-04 11:30 ~ 2026-02-05 07:35 (~38 minutes + UX optimization)
 
 #### Documents
-Located in: `docs/archive/2026-02/md-to-slide-core/`
+- [Plan](./md-to-slide-core/md-to-slide-core.plan.md) - Integrated Plan (Schema, Glossary, Conventions)
+- [Design](./md-to-slide-core/md-to-slide-core.design.md) - Component Architecture
+- [Analysis](./md-to-slide-core/md-to-slide-core.analysis.md) - Gap Analysis (94%)
+- [Report](./md-to-slide-core/md-to-slide-core.report.md) - PDCA Completion Report
 
 #### Summary
-Core markdown-to-slide conversion functionality with real-time preview and theme selection.
+마크다운 → reveal.js 슬라이드 변환기 - 실시간 미리보기, 12개 테마, PDF/HTML 내보내기 구현.
+
+**Key Achievements**:
+- 94% Design Match Rate
+- 34 Files Implemented (~2,600 LOC)
+- 32/34 Functional Requirements (2 deferred: tests, docs)
+- UX Optimization: Loading, Toast, Onboarding, Help
+- Production Ready (Tech Debt: Test Coverage)
+
+**Archived Files** (4 documents, 80.6 KB total):
+| File | Size |
+|------|------|
+| md-to-slide-core.plan.md | 10K |
+| md-to-slide-core.design.md | 34K |
+| md-to-slide-core.analysis.md | 18K |
+| md-to-slide-core.report.md | 18K |
 
 ---
 

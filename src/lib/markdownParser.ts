@@ -1,6 +1,8 @@
 import { marked } from 'marked'
-import type { Slide } from '@/types/slide.types'
+import DOMPurify from 'dompurify'
+
 import { HORIZONTAL_SEPARATOR, VERTICAL_SEPARATOR } from '@/constants/separators'
+import type { Slide } from '@/types/slide.types'
 
 /**
  * Markdown을 Slide 배열로 파싱
@@ -40,8 +42,11 @@ export function parseMarkdownToSlides(markdown: string): Slide[] {
       // 빈 슬라이드 건너뛰기
       if (!trimmedContent) return
 
-      // 3단계: 마크다운 → HTML 변환
-      const html = marked(trimmedContent) as string
+      // 3단계: 마크다운 → HTML 변환 + XSS 방지
+      const rawHtml = marked(trimmedContent) as string
+      const html = typeof window !== 'undefined'
+        ? DOMPurify.sanitize(rawHtml)
+        : rawHtml
 
       slides.push({
         id: `slide-${hIndex}-${vIndex}`,

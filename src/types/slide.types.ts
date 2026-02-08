@@ -15,6 +15,8 @@ export interface Slide {
   type: 'horizontal' | 'vertical'
   sectionId?: string
   notes?: string
+  background?: string // 배경 이미지/색상
+  transition?: string // 전환 효과
 }
 
 /**
@@ -38,6 +40,7 @@ export interface Theme {
   builtIn: boolean
   cssUrl: string
   cssVariables?: Record<string, string>
+  preview?: string // 썸네일 이미지 URL
 }
 
 /**
@@ -77,6 +80,7 @@ export interface SlideStore {
   slides: Slide[]
   selectedTheme: string
   editorState: EditorState
+  isDirty: boolean
 
   // ========== NEW: UX State (v1.1.0) ==========
   isLoading: boolean
@@ -91,6 +95,7 @@ export interface SlideStore {
   setSlides: (slides: Slide[]) => void
   setSelectedTheme: (theme: string) => void
   setEditorState: (state: Partial<EditorState>) => void
+  setIsDirty: (dirty: boolean) => void
   reset: () => void
 
   // ========== NEW: UX Actions (v1.1.0) ==========
