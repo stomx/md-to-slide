@@ -1,4 +1,10 @@
 declare module 'reveal.js' {
+  interface RevealPlugin {
+    id?: string
+    init?: (reveal: Reveal) => void | Promise<void>
+    destroy?: () => void
+  }
+
   interface RevealOptions {
     embedded?: boolean
     controls?: boolean
@@ -9,6 +15,12 @@ declare module 'reveal.js' {
     width?: number
     height?: number
     hash?: boolean
+    plugins?: RevealPlugin[]
+    markdown?: {
+      separator?: string
+      verticalSeparator?: string
+      notesSeparator?: string
+    }
   }
 
   class Reveal {
@@ -21,4 +33,10 @@ declare module 'reveal.js' {
   }
 
   export default Reveal
+}
+
+declare module 'reveal.js/plugin/markdown/markdown.esm.js' {
+  import type { RevealPlugin } from 'reveal.js'
+  const RevealMarkdown: RevealPlugin
+  export default RevealMarkdown
 }

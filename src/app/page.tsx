@@ -1,13 +1,16 @@
 'use client'
 
-import { Presentation } from 'lucide-react'
+import { Presentation, Sparkles } from 'lucide-react'
 
 import { MarkdownEditor } from '@/components/MarkdownEditor'
 import { SlidePreview } from '@/components/SlidePreview'
 import { ThemeSelector } from '@/components/ThemeSelector'
 import { ExportButtons } from '@/components/ExportButtons'
 import { ResponsiveLayout } from '@/components/ResponsiveLayout'
+import { AIWizardPanel } from '@/components/ai-wizard/AIWizardPanel'
 import { useSlideStore } from '@/store/slide-store'
+import { useAIWizardStore } from '@/store/ai-wizard-store'
+import { Button } from '@/components/ui/Button'
 
 /**
  * Home Page
@@ -20,6 +23,7 @@ import { useSlideStore } from '@/store/slide-store'
  */
 export default function Home() {
   const { slides, selectedTheme, isDirty } = useSlideStore()
+  const { isOpen, openWizard } = useAIWizardStore()
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
@@ -34,6 +38,15 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-end gap-4">
+            <Button
+              variant={isOpen ? 'default' : 'outline'}
+              size="sm"
+              onClick={openWizard}
+              className="gap-1.5"
+            >
+              <Sparkles className="h-4 w-4" />
+              AI 생성
+            </Button>
             <ThemeSelector />
             <ExportButtons />
           </div>
@@ -45,6 +58,7 @@ export default function Home() {
         <ResponsiveLayout>
           <MarkdownEditor />
           <SlidePreview />
+          <AIWizardPanel />
         </ResponsiveLayout>
       </main>
 

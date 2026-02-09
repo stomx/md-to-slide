@@ -1,24 +1,24 @@
 'use client'
 
 import React, { useEffect, useRef, useState } from 'react'
+import DOMPurify from 'dompurify'
 import { useSlideStore } from '@/store/slide-store'
-import { slidesToRevealHTML } from '@/lib/markdownParser'
 import { REVEAL_CONFIG } from '@/constants/defaults'
 
 /**
  * SlidePreview 컴포넌트
  *
- * React 내에서 직접 reveal.js 사용 (iframe 제거)
+ * reveal.js Markdown 플러그인을 사용하여 마크다운을 직접 렌더링
  */
 export function SlidePreview() {
-  const { slides, selectedTheme } = useSlideStore()
+  const { markdown, selectedTheme } = useSlideStore()
   const containerRef = useRef<HTMLDivElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const revealRef = useRef<any>(null)
   const [isReady, setIsReady] = useState(false)
   const initializingRef = useRef(false)
 
-  // reveal.js 초기화 (한 번만)
+  // reveal.js + Markdown 플러그인 초기화 (한 번만)
   useEffect(() => {
     if (initializingRef.current) return
     if (typeof window === 'undefined') return
@@ -27,6 +27,7 @@ export function SlidePreview() {
 
     const initReveal = async () => {
       const Reveal = (await import('reveal.js')).default
+      const RevealMarkdown = (await import('reveal.js/plugin/markdown/markdown.esm.js')).default
 
       if (!containerRef.current) return
 
@@ -36,6 +37,7 @@ export function SlidePreview() {
         hash: false,
         width: 960,
         height: 700,
+        plugins: [RevealMarkdown],
       })
 
       // Reveal 'ready' 이벤트 리스너 등록
@@ -62,17 +64,26 @@ export function SlidePreview() {
   useEffect(() => {
     if (!isReady || !revealRef.current) return
 
-    const slidesHTML = slidesToRevealHTML(slides)
+    // DOMPurify로 마크다운 sanitize (XSS 방지)
+    const sanitizedMarkdown = DOMPurify.sanitize(markdown)
     const slidesContainer = containerRef.current?.querySelector('.slides')
 
     if (slidesContainer) {
-      slidesContainer.innerHTML = slidesHTML
+      // reveal.js Markdown 플러그인 방식: data-markdown + script template
+      const section = document.createElement('section')
+      section.setAttribute('data-markdown', '')
+      const script = document.createElement('script')
+      script.setAttribute('type', 'text/template')
+      script.textContent = sanitizedMarkdown
+      section.appendChild(script)
 
-      // Reveal.js API 직접 호출 (이벤트 기반)
+      slidesContainer.replaceChildren(section)
+
+      // Markdown 플러그인으로 다시 파싱 후 sync
       revealRef.current.sync()
       revealRef.current.slide(0, 0)
     }
-  }, [slides, isReady])
+  }, [markdown, isReady])
 
   // 테마 업데이트
   useEffect(() => {

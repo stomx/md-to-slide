@@ -24,11 +24,11 @@ export const DEFAULT_MARKDOWN = `# Welcome to md-to-slide
 
 Press Down ↓
 
------
+--
 
 ### Nested Slide 1
 
------
+--
 
 ### Nested Slide 2
 
@@ -54,6 +54,11 @@ export const REVEAL_CONFIG = {
   center: true,
   transition: 'slide' as const,
   slideNumber: true,
+  markdown: {
+    separator: '^\n---\n$',
+    verticalSeparator: '^\n--\n$',
+    notesSeparator: '^notes?:',
+  },
 }
 
 /**

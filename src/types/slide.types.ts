@@ -20,6 +20,16 @@ export interface Slide {
 }
 
 /**
+ * 슬라이드 메타데이터 (경량 정보)
+ */
+export interface SlideMetadata {
+  index: number
+  title: string | null
+  hasNotes: boolean
+  background: string | null
+}
+
+/**
  * 슬라이드 덱 (전체 프레젠테이션)
  */
 export interface Deck {
@@ -56,7 +66,7 @@ export interface Section {
  * 내보내기 설정
  */
 export interface ExportConfig {
-  format: 'pdf' | 'html'
+  format: 'pdf' | 'html' | 'pptx'
   includeNotes: boolean
   theme: string
   customCss?: string

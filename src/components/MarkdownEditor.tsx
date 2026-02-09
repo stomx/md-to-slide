@@ -78,7 +78,7 @@ export function MarkdownEditor() {
         <p id="editor-help" className="text-sm text-gray-600">
           Use <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-xs text-gray-800">---</code> for
           horizontal slides,{' '}
-          <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-xs text-gray-800">-----</code> for
+          <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-xs text-gray-800">--</code> for
           vertical
         </p>
       </div>
