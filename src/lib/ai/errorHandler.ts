@@ -34,8 +34,13 @@ export type ErrorRecoveryKey = keyof typeof ERROR_RECOVERY
  */
 export function classifyError(error: Error): ErrorRecoveryKey {
   const message = error.message.toLowerCase()
+  const errorName = error.constructor.name
 
-  if (message.includes('rate') || message.includes('429')) {
+  if (
+    message.includes('rate') ||
+    message.includes('429') ||
+    errorName === 'RateLimitError'
+  ) {
     return 'rate_limit'
   }
 
@@ -43,9 +48,18 @@ export function classifyError(error: Error): ErrorRecoveryKey {
     message.includes('network') ||
     message.includes('fetch') ||
     message.includes('econnrefused') ||
-    message.includes('timeout')
+    message.includes('timeout') ||
+    errorName === 'APIConnectionError'
   ) {
     return 'network_error'
+  }
+
+  if (
+    message.includes('401') ||
+    message.includes('authentication') ||
+    errorName === 'AuthenticationError'
+  ) {
+    return 'planning_fail'
   }
 
   if (message.includes('planning') || message.includes('outline')) {

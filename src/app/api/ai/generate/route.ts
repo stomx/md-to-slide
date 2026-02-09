@@ -1,15 +1,15 @@
 import { NextRequest } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { executePlanning, executeGeneration } from '@/lib/ai/pipeline'
 import { encodeSSE } from '@/lib/ai/streamHelpers'
 import type { AIGenerateOptions, OutlineItem } from '@/types/ai.types'
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY
+  const apiKey = process.env.OPENAI_API_KEY
 
   if (!apiKey) {
     return new Response(
-      JSON.stringify({ error: 'ANTHROPIC_API_KEY not configured' }),
+      JSON.stringify({ error: 'OPENAI_API_KEY not configured' }),
       {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const anthropic = new Anthropic({ apiKey })
+  const openai = new OpenAI({ apiKey })
 
   try {
     const body = await request.json()
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
             controller.enqueue(encodeSSE({ type: 'planning_start' }))
 
-            const result = await executePlanning(anthropic, options)
+            const result = await executePlanning(openai, options)
 
             controller.enqueue(
               encodeSSE({ type: 'planning_complete', data: result })
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encodeSSE({ type: 'generation_start' }))
 
             await executeGeneration(
-              anthropic,
+              openai,
               outline,
               theme,
               language,

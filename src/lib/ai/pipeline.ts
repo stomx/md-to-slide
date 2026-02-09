@@ -1,4 +1,4 @@
-import Anthropic from '@anthropic-ai/sdk'
+import OpenAI from 'openai'
 import { PLANNING_SYSTEM_PROMPT, GENERATOR_SYSTEM_PROMPT } from './prompts'
 import type {
   AIGenerateOptions,
@@ -75,23 +75,21 @@ ${outlineText}
  * Planning 호출 실행
  */
 export async function executePlanning(
-  anthropic: Anthropic,
+  openai: OpenAI,
   options: AIGenerateOptions
 ): Promise<PlanningResult> {
-  const model = process.env.AI_MODEL || 'claude-sonnet-4-5-20250929'
+  const model = process.env.AI_MODEL || 'gpt-4o'
   const userPrompt = buildPlanningUserPrompt(options)
 
-  const message = await anthropic.messages.create({
+  const response = await openai.chat.completions.create({
     model,
     max_tokens: 2000,
-    system: [
-      {
-        type: 'text',
-        text: PLANNING_SYSTEM_PROMPT,
-        cache_control: { type: 'ephemeral' },
-      },
-    ],
+    response_format: { type: 'json_object' },
     messages: [
+      {
+        role: 'system',
+        content: PLANNING_SYSTEM_PROMPT,
+      },
       {
         role: 'user',
         content: userPrompt,
@@ -99,13 +97,13 @@ export async function executePlanning(
     ],
   })
 
-  const content = message.content[0]
-  if (content.type !== 'text') {
-    throw new Error('Unexpected response type from planning call')
+  const content = response.choices[0]?.message?.content
+  if (!content) {
+    throw new Error('Empty response from planning call')
   }
 
   try {
-    const result = JSON.parse(content.text) as PlanningResult
+    const result = JSON.parse(content) as PlanningResult
     return result
   } catch (error) {
     throw new Error(
@@ -118,14 +116,14 @@ export async function executePlanning(
  * Generation 호출 실행 (스트리밍)
  */
 export async function executeGeneration(
-  anthropic: Anthropic,
+  openai: OpenAI,
   outline: OutlineItem[],
   theme: string,
   language: 'ko' | 'en',
   controller: ReadableStreamDefaultController,
   encodeSSE: (event: SSEEvent) => string
 ): Promise<void> {
-  const model = process.env.AI_MODEL || 'claude-sonnet-4-5-20250929'
+  const model = process.env.AI_MODEL || 'gpt-4o'
   const maxTokens = parseInt(process.env.AI_MAX_TOKENS || '4000', 10)
   const userPrompt = buildGenerationUserPrompt(outline, theme, language)
 
@@ -134,17 +132,16 @@ export async function executeGeneration(
   let currentSlideNumber = 1
   let tokensUsed = 0
 
-  const stream = anthropic.messages.stream({
+  const stream = await openai.chat.completions.create({
     model,
     max_tokens: maxTokens,
-    system: [
-      {
-        type: 'text',
-        text: GENERATOR_SYSTEM_PROMPT,
-        cache_control: { type: 'ephemeral' },
-      },
-    ],
+    stream: true,
+    stream_options: { include_usage: true },
     messages: [
+      {
+        role: 'system',
+        content: GENERATOR_SYSTEM_PROMPT,
+      },
       {
         role: 'user',
         content: userPrompt,
@@ -152,7 +149,15 @@ export async function executeGeneration(
     ],
   })
 
-  stream.on('text', (text) => {
+  for await (const chunk of stream) {
+    if (chunk.usage) {
+      tokensUsed = chunk.usage.prompt_tokens + chunk.usage.completion_tokens
+      continue
+    }
+
+    const text = chunk.choices[0]?.delta?.content
+    if (!text) continue
+
     fullMarkdown += text
     controller.enqueue(encodeSSE({ type: 'md_delta', content: text }))
 
@@ -163,10 +168,7 @@ export async function executeGeneration(
         encodeSSE({ type: 'slide_complete', slideNumber: currentSlideNumber })
       )
     }
-  })
-
-  const message = await stream.finalMessage()
-  tokensUsed = message.usage.input_tokens + message.usage.output_tokens
+  }
 
   const durationMs = Date.now() - startTime
 

@@ -1,7 +1,8 @@
 {
   "version": "2.0",
-  "lastUpdated": "2026-02-09T07:23:57.056Z",
+  "lastUpdated": "2026-02-09T08:20:52.232Z",
   "activeFeatures": [
+    "change-llm-provider",
     "md-to-slide",
     "store",
     "ui",
@@ -13,8 +14,24 @@
     "export",
     "ai-wizard"
   ],
-  "primaryFeature": "md-to-slide",
+  "primaryFeature": "change-llm-provider",
   "features": {
+    "change-llm-provider": {
+      "phase": "check",
+      "phaseNumber": 4,
+      "matchRate": 100,
+      "iterationCount": 0,
+      "requirements": [],
+      "documents": {
+        "plan": "docs/01-plan/features/change-llm-provider.plan.md",
+        "design": "docs/02-design/features/change-llm-provider.design.md",
+        "analysis": "docs/03-analysis/change-llm-provider.analysis.md"
+      },
+      "timestamps": {
+        "started": "2026-02-09T08:00:00.000Z",
+        "lastUpdated": "2026-02-09T08:10:00.000Z"
+      }
+    },
     "md-to-slide-core": {
       "phase": "archived",
       "startedAt": "2026-02-04T11:30:00.000Z",
@@ -114,9 +131,9 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-09T06:57:28.534Z",
-        "lastUpdated": "2026-02-09T07:09:02.670Z"
+        "lastUpdated": "2026-02-09T08:20:52.231Z"
       },
-      "lastFile": "/Users/ax/Personal/Study/md-to-slides/src/lib/ai/pipeline.ts"
+      "lastFile": "/Users/ax/Personal/Study/md-to-slides/src/lib/ai/errorHandler.ts"
     },
     "generate": {
       "phase": "do",
@@ -127,7 +144,7 @@
       "documents": {},
       "timestamps": {
         "started": "2026-02-09T06:58:13.573Z",
-        "lastUpdated": "2026-02-09T07:01:07.740Z"
+        "lastUpdated": "2026-02-09T08:20:46.547Z"
       },
       "lastFile": "/Users/ax/Personal/Study/md-to-slides/src/app/api/ai/generate/route.ts"
     },
@@ -200,7 +217,7 @@
   "session": {
     "startedAt": "2026-02-04T11:24:34.661Z",
     "onboardingCompleted": true,
-    "lastActivity": "2026-02-09T07:23:57.056Z"
+    "lastActivity": "2026-02-09T08:20:52.232Z"
   },
   "history": [
     {
@@ -1420,6 +1437,48 @@
     {
       "timestamp": "2026-02-09T07:23:57.056Z",
       "feature": "ai-wizard",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-09T08:20:10.566Z",
+      "feature": "ai",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-09T08:20:15.214Z",
+      "feature": "generate",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-09T08:20:32.549Z",
+      "feature": "ai",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-09T08:20:44.035Z",
+      "feature": "ai",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-09T08:20:45.244Z",
+      "feature": "generate",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-09T08:20:46.547Z",
+      "feature": "generate",
+      "phase": "do",
+      "action": "updated"
+    },
+    {
+      "timestamp": "2026-02-09T08:20:52.231Z",
+      "feature": "ai",
       "phase": "do",
       "action": "updated"
     }
