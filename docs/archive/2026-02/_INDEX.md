@@ -74,5 +74,34 @@ UX 최적화 기능 - 로딩 상태, 에러 처리, 접근성, 반응형 디자�
 
 ---
 
-**Total Archived Features**: 2
-**Last Updated**: 2026-02-05
+---
+
+### apply-gen-ai-feature (v0.2.0)
+
+**Archived**: 2026-02-09
+**Match Rate**: 100%
+**Iterations**: 2
+**Duration**: 2026-02-09 05:50 ~ 2026-02-09 (same day)
+
+#### Documents
+- [Plan](./apply-gen-ai-feature/apply-gen-ai-feature.plan.md) - Gen AI Feature PRD
+- [Design](./apply-gen-ai-feature/apply-gen-ai-feature.design.md) - 2+2 Hybrid AI Pipeline Architecture
+- [Analysis](./apply-gen-ai-feature/apply-gen-ai-feature.analysis.md) - Gap Analysis (100%)
+- [Report](./apply-gen-ai-feature/apply-gen-ai-feature.report.md) - PDCA Completion Report
+
+#### Summary
+자연어 입력 → AI Agent 파이프라인 → reveal.js 마크다운 슬라이드 생성 + PPTX 내보내기.
+
+**Key Achievements**:
+- 100% Design Match Rate (2 iterations)
+- 16 New Files, 8 Modified Files
+- 2+2 Hybrid AI Pipeline (Plan + Generate, 2 API calls)
+- Anthropic Claude Sonnet 4.5 + Prompt Caching
+- SSE Streaming + 4-Step Wizard UI
+- PPTX Export via pptxgenjs
+- TypeScript Build: 0 errors
+
+---
+
+**Total Archived Features**: 3
+**Last Updated**: 2026-02-09

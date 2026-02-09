@@ -2,9 +2,9 @@
   "currentFeature": null,
   "phase": null,
   "lastArchived": {
-    "feature": "ux-optimization",
-    "version": "1.1.0",
-    "archivedAt": "2026-02-05T16:30:00Z",
-    "archivedTo": "docs/archive/2026-02/ux-optimization/"
+    "feature": "apply-gen-ai-feature",
+    "version": "0.2.0",
+    "archivedAt": "2026-02-09T15:30:00Z",
+    "archivedTo": "docs/archive/2026-02/apply-gen-ai-feature/"
   }
 }
