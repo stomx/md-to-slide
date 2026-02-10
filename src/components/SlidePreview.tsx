@@ -11,7 +11,7 @@ import { REVEAL_CONFIG } from '@/constants/defaults'
  * reveal.js Markdown 플러그인을 사용하여 마크다운을 직접 렌더링
  */
 export function SlidePreview() {
-  const { markdown, selectedTheme } = useSlideStore()
+  const { markdown, selectedTheme, currentSlideIndex, setCurrentSlideIndex } = useSlideStore()
   const containerRef = useRef<HTMLDivElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const revealRef = useRef<any>(null)
@@ -79,11 +79,49 @@ export function SlidePreview() {
 
       slidesContainer.replaceChildren(section)
 
-      // Markdown 플러그인으로 다시 파싱 후 sync
-      revealRef.current.sync()
-      revealRef.current.slide(0, 0)
+      // Markdown 플러그인으로 새 섹션을 HTML로 변환
+      // processSlides(): separator로 분할 → convertSlides(): marked()로 HTML 변환
+      const markdownPlugin = revealRef.current.getPlugin('markdown')
+      if (markdownPlugin?.processSlides) {
+        markdownPlugin.processSlides(containerRef.current).then(() => {
+          markdownPlugin.convertSlides()
+
+          // DOM 안정화 후 sync
+          requestAnimationFrame(() => {
+            try {
+              revealRef.current?.sync()
+              revealRef.current?.slide(0, 0)
+            } catch {
+              // scroll view 초기화 타이밍 이슈 - 무시 가능
+            }
+          })
+        })
+      }
     }
   }, [markdown, isReady])
+
+  // store → reveal.js 슬라이드 인덱스 동기화
+  useEffect(() => {
+    if (!isReady || !revealRef.current) return
+    const indices = revealRef.current.getIndices()
+    if (indices.h !== currentSlideIndex) {
+      try {
+        revealRef.current.slide(currentSlideIndex, 0)
+      } catch {
+        // 인덱스 범위 초과 시 무시
+      }
+    }
+  }, [currentSlideIndex, isReady])
+
+  // reveal.js → store 역방향 동기화
+  useEffect(() => {
+    if (!isReady || !revealRef.current) return
+    const handleSlideChanged = (event: { indexh: number }) => {
+      setCurrentSlideIndex(event.indexh)
+    }
+    revealRef.current.on('slidechanged', handleSlideChanged)
+    return () => revealRef.current?.off('slidechanged', handleSlideChanged)
+  }, [isReady, setCurrentSlideIndex])
 
   // 테마 업데이트
   useEffect(() => {

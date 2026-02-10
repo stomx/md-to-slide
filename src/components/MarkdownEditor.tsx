@@ -8,17 +8,16 @@ import { parseMarkdownToSlides } from '@/lib/markdownParser'
 import { handleError } from '@/lib/errorHandler'
 import { DEBOUNCE_DELAY } from '@/constants/defaults'
 
-import { Textarea } from './ui/Textarea'
 import { LoadingSpinner } from './LoadingSpinner'
 import { showToast } from './Toast'
 
 /**
- * MarkdownEditor 컴포넌트
+ * MarkdownEditor 컴포넌트 (v0.4.0 - 다크 테마)
  *
- * 마크다운 입력 에디터
- * - 실시간 입력
- * - Debounce 처리 (300ms)
- * - 자동 파싱 트리거
+ * 다크 사이드바 내 마크다운 입력 에디터
+ * - 다크 배경 + 밝은 텍스트
+ * - JetBrains Mono 폰트
+ * - 슬라이드 소스 헤더
  */
 export function MarkdownEditor() {
   const {
@@ -30,9 +29,9 @@ export function MarkdownEditor() {
     setLoading,
     setError,
     clearError,
+    currentSlideIndex,
   } = useSlideStore()
 
-  // Debounced 파싱 함수 with error handling
   const debouncedParse = useCallback(
     debounce(async (text: string) => {
       setLoading(true, 'Parsing markdown...')
@@ -53,14 +52,12 @@ export function MarkdownEditor() {
     [setSlides, setLoading, setError, clearError]
   )
 
-  // 마크다운 변경 핸들러
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newMarkdown = e.target.value
     setMarkdown(newMarkdown)
     debouncedParse(newMarkdown)
   }
 
-  // 초기 파싱
   useEffect(() => {
     try {
       const parsedSlides = parseMarkdownToSlides(markdown)
@@ -72,35 +69,33 @@ export function MarkdownEditor() {
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
-    <div className="relative flex h-full flex-col bg-white text-gray-900">
-      <div className="border-b bg-gray-50 px-4 py-3">
-        <h2 className="text-lg font-semibold text-gray-900">Markdown Editor</h2>
-        <p id="editor-help" className="text-sm text-gray-600">
-          Use <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-xs text-gray-800">---</code> for
-          horizontal slides,{' '}
-          <code className="rounded bg-gray-200 px-1.5 py-0.5 font-mono text-xs text-gray-800">--</code> for
-          vertical
-        </p>
+    <div className="flex flex-col h-full">
+      {/* Slide Source Header */}
+      <div className="flex items-center justify-between px-4 py-2 bg-sidebar-darker border-b border-gray-800 text-xs uppercase tracking-wider font-semibold text-gray-500">
+        <span>Slide {currentSlideIndex + 1} Source</span>
+        <span className="text-xs bg-gray-800 px-2 py-0.5 rounded text-gray-400 font-mono">MD</span>
       </div>
-      <div className="flex-1 p-4 bg-white relative">
+
+      {/* Editor Area */}
+      <div className="flex-1 relative">
         <label htmlFor="markdown-editor" className="sr-only">
           Markdown Editor
         </label>
-        <Textarea
+        <textarea
           id="markdown-editor"
           value={markdown}
           onChange={handleChange}
           placeholder="# Your Presentation Title&#10;&#10;---&#10;&#10;## Slide 2"
-          className="h-full resize-none font-mono text-sm bg-white text-gray-900 border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+          className="w-full h-full bg-sidebar-dark p-6 font-mono text-sm leading-relaxed text-gray-300 resize-none focus:outline-none focus:ring-0 border-none selection:bg-primary/30"
+          spellCheck={false}
           aria-label="Markdown editor"
-          aria-describedby="editor-help"
           aria-invalid={!!error}
           aria-busy={isLoading}
         />
 
         {/* Loading Overlay */}
         {isLoading && (
-          <div className="absolute inset-0 bg-white/50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-sidebar-dark/50 flex items-center justify-center">
             <LoadingSpinner size="md" message="Parsing markdown..." />
           </div>
         )}
@@ -110,16 +105,16 @@ export function MarkdownEditor() {
           <div
             role="alert"
             aria-live="assertive"
-            className="absolute bottom-4 left-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-lg"
+            className="absolute bottom-4 left-4 right-4 bg-red-900/80 border border-red-700 text-red-200 px-4 py-3 rounded shadow-lg"
           >
             <strong className="font-bold">Error: </strong>
             <span className="block sm:inline">{error}</span>
             <button
               onClick={clearError}
-              className="absolute top-2 right-2 text-red-700 hover:text-red-900"
+              className="absolute top-2 right-2 text-red-300 hover:text-red-100"
               aria-label="Dismiss error"
             >
-              ×
+              &times;
             </button>
           </div>
         )}

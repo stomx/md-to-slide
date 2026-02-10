@@ -100,6 +100,13 @@ export interface SlideStore {
   hasSeenOnboarding: boolean
   keyboardShortcutsEnabled: boolean
 
+  // ========== NEW: UI State (v0.4.0) ==========
+  currentSlideIndex: number
+  viewMode: 'filmstrip' | 'grid'
+  zoomLevel: number
+  editorMode: 'markdown' | 'ai'
+  documentTitle: string
+
   // ========== Existing Actions (v1.0.0) ==========
   setMarkdown: (markdown: string) => void
   setSlides: (slides: Slide[]) => void
@@ -115,4 +122,13 @@ export interface SlideStore {
   setProgress: (progress: number) => void
   setHasSeenOnboarding: (seen: boolean) => void
   setKeyboardShortcutsEnabled: (enabled: boolean) => void
+
+  // ========== NEW: UI Actions (v0.4.0) ==========
+  setCurrentSlideIndex: (index: number) => void
+  setViewMode: (mode: 'filmstrip' | 'grid') => void
+  setZoomLevel: (level: number) => void
+  setEditorMode: (mode: 'markdown' | 'ai') => void
+  setDocumentTitle: (title: string) => void
+  goToNextSlide: () => void
+  goToPrevSlide: () => void
 }

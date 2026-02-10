@@ -31,6 +31,13 @@ export const useSlideStore = create<SlideStore>((set) => ({
     : false,
   keyboardShortcutsEnabled: true,
 
+  // ========== NEW: UI State (v0.4.0) ==========
+  currentSlideIndex: 0,
+  viewMode: 'filmstrip',
+  zoomLevel: 66,
+  editorMode: 'markdown',
+  documentTitle: 'Untitled Presentation',
+
   // ========== Actions (v1.0.0) ==========
   setMarkdown: (markdown: string) =>
     set(() => ({
@@ -104,5 +111,41 @@ export const useSlideStore = create<SlideStore>((set) => ({
   setKeyboardShortcutsEnabled: (enabled: boolean) =>
     set(() => ({
       keyboardShortcutsEnabled: enabled,
+    })),
+
+  // ========== NEW: UI Actions (v0.4.0) ==========
+  setCurrentSlideIndex: (index: number) =>
+    set(() => ({
+      currentSlideIndex: index,
+    })),
+
+  setViewMode: (mode: 'filmstrip' | 'grid') =>
+    set(() => ({
+      viewMode: mode,
+    })),
+
+  setZoomLevel: (level: number) =>
+    set(() => ({
+      zoomLevel: Math.min(100, Math.max(0, level)),
+    })),
+
+  setEditorMode: (mode: 'markdown' | 'ai') =>
+    set(() => ({
+      editorMode: mode,
+    })),
+
+  setDocumentTitle: (title: string) =>
+    set(() => ({
+      documentTitle: title,
+    })),
+
+  goToNextSlide: () =>
+    set((state) => ({
+      currentSlideIndex: Math.min(state.slides.length - 1, state.currentSlideIndex + 1),
+    })),
+
+  goToPrevSlide: () =>
+    set((state) => ({
+      currentSlideIndex: Math.max(0, state.currentSlideIndex - 1),
     })),
 }))

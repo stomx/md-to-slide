@@ -103,5 +103,41 @@ UX 최적화 기능 - 로딩 상태, 에러 처리, 접근성, 반응형 디자�
 
 ---
 
-**Total Archived Features**: 3
+---
+
+### change-llm-provider (v0.3.0)
+
+**Archived**: 2026-02-09
+**Match Rate**: 100%
+**Iterations**: 0
+**Duration**: 2026-02-09 (~2 hours, same day)
+
+#### Documents
+- [Plan](./change-llm-provider/change-llm-provider.plan.md) - LLM Provider Migration PRD
+- [Design](./change-llm-provider/change-llm-provider.design.md) - Anthropic → OpenAI SDK Migration Design
+- [Analysis](./change-llm-provider/change-llm-provider.analysis.md) - Gap Analysis (100%)
+- [Report](./change-llm-provider/change-llm-provider.report.md) - PDCA Completion Report
+
+#### Summary
+LLM Provider를 Anthropic Claude Sonnet 4.5에서 OpenAI GPT-4o로 변경. 5개 파일 수정, UI 변경 없음.
+
+**Key Achievements**:
+- 100% Design Match Rate (첫 구현에서 달성, 0 iterations)
+- 5 Files Modified (pipeline.ts, route.ts, errorHandler.ts, package.json, .env.example)
+- OpenAI JSON Mode (`response_format: json_object`) 적용
+- AsyncIterator 스트리밍 패턴 (`for await`)
+- OpenAI 에러 클래스 3종 분류 추가
+- TypeScript Build: 0 errors
+
+**Archived Files** (4 documents):
+| File | Size |
+|------|------|
+| change-llm-provider.plan.md | ~5K |
+| change-llm-provider.design.md | ~10K |
+| change-llm-provider.analysis.md | ~1K |
+| change-llm-provider.report.md | ~6K |
+
+---
+
+**Total Archived Features**: 4
 **Last Updated**: 2026-02-09
