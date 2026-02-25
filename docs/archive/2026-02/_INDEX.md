@@ -139,5 +139,39 @@ LLM Provider를 Anthropic Claude Sonnet 4.5에서 OpenAI GPT-4o로 변경. 5개 
 
 ---
 
-**Total Archived Features**: 4
-**Last Updated**: 2026-02-09
+---
+
+### migration-ui (v0.4.0)
+
+**Archived**: 2026-02-10
+**Match Rate**: 100%
+**Iterations**: 1
+**Duration**: 2026-02-09 (~1 day)
+
+#### Documents
+- [Plan](./migration-ui/migration-ui.plan.md) - Slide-First Hybrid Workspace UI PRD
+- [Design](./migration-ui/migration-ui.design.md) - 30:70 Layout + Component Architecture
+- [Report](./migration-ui/migration-ui.report.md) - PDCA Completion Report
+
+#### Summary
+기존 50:50 에디터/프리뷰 레이아웃을 SaaS급 Slide-First Hybrid Workspace로 전면 개편.
+
+**Key Achievements**:
+- 100% Design Match Rate (10/10 검증 기준)
+- 8 New Components (ModeSwitcher, BottomNavigationBar, ThumbnailStrip, FloatingToolbar, SlideCanvas, EditorActionBar, EditorPanel, PreviewPanel)
+- 7 Modified Files, 1 Deleted (ResponsiveLayout.tsx)
+- +1,769/-206 lines (20 files)
+- SlidePreview blank screen 버그 수정 (reveal.js 2단계 파이프라인)
+- Material Symbols + Inter/JetBrains Mono 폰트 시스템
+
+**Archived Files** (3 documents):
+| File | Size |
+|------|------|
+| migration-ui.plan.md | ~10K |
+| migration-ui.design.md | ~25K |
+| migration-ui.report.md | ~15K |
+
+---
+
+**Total Archived Features**: 5
+**Last Updated**: 2026-02-10

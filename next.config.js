@@ -10,10 +10,7 @@ const nextConfig = {
         tls: false,
         https: false,
       }
-      config.externals = config.externals || []
-      config.externals.push({
-        'pptxgenjs': 'pptxgenjs',
-      })
+      // pptxgenjs: CDN 런타임 로드 방식 사용 (pptxExporter.ts 참조)
     }
     return config
   },

@@ -17,18 +17,19 @@ import { showToast } from './Toast'
  * PDF 및 HTML 내보내기 버튼
  */
 export function ExportButtons() {
-  const { selectedTheme } = useSlideStore()
+  const { selectedTheme, markdown } = useSlideStore()
 
-  const handleExportPDF = () => {
+  const handleExportPDF = async () => {
     try {
       const config: ExportConfig = {
         format: 'pdf',
         includeNotes: false,
         theme: selectedTheme,
       }
-      exportToPDF(config)
-    } catch {
-      showToast.error('PDF 내보내기에 실패했습니다.')
+      showToast.success('PDF 생성 중...')
+      await exportToPDF(config, markdown)
+    } catch (e) {
+      showToast.error(`PDF 내보내기에 실패했습니다. ${e instanceof Error ? e.message : ''}`)
     }
   }
 
@@ -39,7 +40,7 @@ export function ExportButtons() {
         includeNotes: false,
         theme: selectedTheme,
       }
-      exportToHTML(config, 'presentation.html')
+      exportToHTML(config, markdown, 'presentation.html')
     } catch {
       showToast.error('HTML 내보내기에 실패했습니다.')
     }

@@ -1,5 +1,3 @@
-import PptxGenJS from 'pptxgenjs'
-
 interface PptxExportOptions {
   theme: string
   includeNotes: boolean
@@ -22,15 +20,70 @@ const THEME_COLORS: Record<string, { bg: string; text: string }> = {
   blood: { bg: '222222', text: 'EEEEEE' },
 }
 
+/**
+ * reveal.js 런타임 속성(hidden, aria-hidden, display:none)을 임시 해제하여
+ * DOM 추출이 정상 작동하도록 하는 헬퍼
+ */
+function makeAllSectionsVisible(container: HTMLElement): () => void {
+  const sections = container.querySelectorAll('section')
+  const originals: { el: HTMLElement; cssText: string; hidden: string | null; ariaHidden: string | null }[] = []
+
+  sections.forEach((section) => {
+    const el = section as HTMLElement
+    originals.push({
+      el,
+      cssText: el.style.cssText,
+      hidden: el.getAttribute('hidden'),
+      ariaHidden: el.getAttribute('aria-hidden'),
+    })
+    el.style.display = 'block'
+    el.style.visibility = 'visible'
+    el.style.opacity = '1'
+    el.removeAttribute('hidden')
+    el.removeAttribute('aria-hidden')
+  })
+
+  return () => {
+    originals.forEach(({ el, cssText, hidden, ariaHidden }) => {
+      el.style.cssText = cssText
+      if (hidden !== null) el.setAttribute('hidden', hidden)
+      else el.removeAttribute('hidden')
+      if (ariaHidden !== null) el.setAttribute('aria-hidden', ariaHidden)
+      else el.removeAttribute('aria-hidden')
+    })
+  }
+}
+
+/** CDN에서 pptxgenjs를 런타임 로드 (webpack 번들링 우회) */
+function loadPptxGenJS(): Promise<void> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((window as any).PptxGenJS) return Promise.resolve()
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://cdn.jsdelivr.net/npm/pptxgenjs@4.0.1/dist/pptxgen.bundle.js'
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error('PptxGenJS CDN 로드 실패'))
+    document.head.appendChild(script)
+  })
+}
+
 export async function exportToPptx(
   revealContainer: HTMLElement,
   options: PptxExportOptions
 ): Promise<void> {
-  const pptx = new PptxGenJS()
+  await loadPptxGenJS()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const PptxGenJSClass = (window as any).PptxGenJS
+  const pptx = new PptxGenJSClass()
   const themeColors = THEME_COLORS[options.theme] || THEME_COLORS.black
 
   pptx.layout = 'LAYOUT_WIDE'  // 16:9
 
+  // reveal.js 런타임 속성 임시 해제
+  const restore = makeAllSectionsVisible(revealContainer)
+
+  try {
   // reveal.js DOM에서 <section> 요소들 추출
   const sections = revealContainer.querySelectorAll('.slides > section')
 
@@ -140,4 +193,7 @@ export async function exportToPptx(
 
   // 다운로드
   await pptx.writeFile({ fileName: 'presentation.pptx' })
+  } finally {
+    restore()
+  }
 }

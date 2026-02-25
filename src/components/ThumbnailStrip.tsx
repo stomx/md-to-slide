@@ -9,7 +9,15 @@ import { useSlideStore } from '@/store/slide-store'
  * 클릭 시 해당 슬라이드로 이동
  */
 export function ThumbnailStrip() {
-  const { slides, currentSlideIndex, setCurrentSlideIndex } = useSlideStore()
+  const { slides, currentSlideIndex, setCurrentSlideIndex, markdown, setMarkdown } = useSlideStore()
+
+  const handleAddSlide = () => {
+    const newSlideMarkdown = '\n\n---\n\n## New Slide\n\nContent here...'
+    setMarkdown(markdown + newSlideMarkdown)
+    setTimeout(() => {
+      setCurrentSlideIndex(slides.length)
+    }, 100)
+  }
 
   return (
     <div className="absolute top-0 right-0 bottom-16 w-16 bg-white border-l border-gray-200 flex flex-col items-center py-4 gap-3 overflow-y-auto z-10 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] scrollbar-hide">
@@ -37,7 +45,10 @@ export function ThumbnailStrip() {
       ))}
 
       {/* Add New Slide */}
-      <button className="size-8 mt-2 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary transition-colors">
+      <button
+        onClick={handleAddSlide}
+        className="size-8 mt-2 rounded-full border border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:text-primary hover:border-primary transition-colors"
+      >
         <span className="material-symbols-outlined text-lg">add</span>
       </button>
     </div>

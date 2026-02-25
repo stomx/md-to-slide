@@ -36,7 +36,9 @@ export const useSlideStore = create<SlideStore>((set) => ({
   viewMode: 'filmstrip',
   zoomLevel: 66,
   editorMode: 'markdown',
-  documentTitle: 'Untitled Presentation',
+  documentTitle: typeof window !== 'undefined'
+    ? localStorage.getItem('documentTitle') || 'Untitled Presentation'
+    : 'Untitled Presentation',
 
   // ========== Actions (v1.0.0) ==========
   setMarkdown: (markdown: string) =>
@@ -134,10 +136,14 @@ export const useSlideStore = create<SlideStore>((set) => ({
       editorMode: mode,
     })),
 
-  setDocumentTitle: (title: string) =>
+  setDocumentTitle: (title: string) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('documentTitle', title)
+    }
     set(() => ({
       documentTitle: title,
-    })),
+    }))
+  },
 
   goToNextSlide: () =>
     set((state) => ({

@@ -21,23 +21,22 @@ import {
 export function ThemeSelector() {
   const { selectedTheme, setSelectedTheme } = useSlideStore()
 
-  // 테마 변경 핸들러 (iframe이 자동으로 postMessage를 통해 테마 적용)
   const handleThemeChange = (value: string) => {
     setSelectedTheme(value)
   }
 
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor="theme-selector" className="text-sm font-medium text-gray-700">
+      <label htmlFor="theme-selector" className="text-sm font-medium text-gray-400">
         Theme
       </label>
       <Select value={selectedTheme} onValueChange={handleThemeChange}>
-        <SelectTrigger id="theme-selector" className="w-48 bg-white">
+        <SelectTrigger id="theme-selector" className="w-full bg-gray-700 text-gray-200 border-gray-600">
           <SelectValue placeholder="Select theme" />
         </SelectTrigger>
-        <SelectContent className="bg-white">
+        <SelectContent className="bg-gray-800 border-gray-700">
           {BUILTIN_THEMES.map((theme) => (
-            <SelectItem key={theme.name} value={theme.name} className="text-gray-900">
+            <SelectItem key={theme.name} value={theme.name} className="text-gray-200 focus:bg-gray-700 focus:text-white">
               {theme.displayName}
             </SelectItem>
           ))}

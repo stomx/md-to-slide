@@ -47,6 +47,9 @@ export function SlidePreview() {
 
       await revealInstance.initialize()
       revealRef.current = revealInstance
+      // Export 기능에서 reveal instance 접근용
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(window as any).__revealInstance = revealInstance
     }
 
     initReveal()
@@ -56,6 +59,8 @@ export function SlidePreview() {
         revealRef.current.destroy()
         revealRef.current = null
         initializingRef.current = false
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(window as any).__revealInstance = null
       }
     }
   }, [])

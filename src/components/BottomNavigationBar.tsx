@@ -8,21 +8,23 @@ import { useSlideStore } from '@/store/slide-store'
  * 뷰 토글 + 슬라이드 네비게이터 + 줌 컨트롤
  */
 export function BottomNavigationBar() {
-  const { slides, currentSlideIndex, setCurrentSlideIndex, viewMode, setViewMode } = useSlideStore()
+  const { slides, currentSlideIndex, setCurrentSlideIndex, viewMode } = useSlideStore()
 
   return (
     <div className="h-16 bg-white border-t border-gray-200 flex items-center justify-between px-6 shadow-sm z-20 shrink-0">
-      {/* 좌측: 뷰 토글 */}
-      <div className="flex items-center gap-2">
+      {/* 좌측: 뷰 토글 (비활성화) */}
+      <div className="flex items-center gap-2 opacity-50 cursor-not-allowed" title="Coming soon">
         <ViewToggleButton
           icon="grid_view"
           active={viewMode === 'grid'}
-          onClick={() => setViewMode('grid')}
+          onClick={() => {}}
+          disabled
         />
         <ViewToggleButton
           icon="view_sidebar"
           active={viewMode === 'filmstrip'}
-          onClick={() => setViewMode('filmstrip')}
+          onClick={() => {}}
+          disabled
         />
       </div>
 
@@ -48,11 +50,9 @@ export function BottomNavigationBar() {
         </button>
       </div>
 
-      {/* 우측: 줌 */}
-      <div className="flex items-center gap-3 w-[100px] justify-end">
-        <button className="text-gray-500 hover:text-gray-900 text-xs font-medium uppercase tracking-wide">
-          Fit
-        </button>
+      {/* 우측: 줌 (비활성화) */}
+      <div className="flex items-center gap-3 w-[100px] justify-end opacity-50 cursor-not-allowed" title="Coming soon">
+        <span className="text-gray-500 text-xs font-medium uppercase tracking-wide">Fit</span>
       </div>
     </div>
   )
@@ -62,19 +62,22 @@ function ViewToggleButton({
   icon,
   active,
   onClick,
+  disabled,
 }: {
   icon: string
   active: boolean
   onClick: () => void
+  disabled?: boolean
 }) {
   return (
     <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={`p-2 rounded-lg transition-colors ${
         active
           ? 'bg-gray-200 text-gray-900'
-          : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-      }`}
+          : 'text-gray-400'
+      } ${disabled ? 'cursor-not-allowed' : 'hover:text-gray-600 hover:bg-gray-100'}`}
     >
       <span className="material-symbols-outlined text-[20px]">{icon}</span>
     </button>
